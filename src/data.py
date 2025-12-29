@@ -49,3 +49,10 @@ while True: # 한번의 호출가능한 수가 한정되어있으므로 반복�
 
 print("수집한 리뷰 수:", len(all_reviews))
 
+
+# --- 2. 데이터프레임 변환 ---
+
+df = pd.DataFrame(all_reviews)
+df['app'] = APP_NAME_KOR
+df['platform'] = 'playstore'
+

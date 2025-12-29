@@ -27,12 +27,11 @@
 
 1.  **Python 설치:** Python 3.8 이상 버전이 설치되어 있어야 합니다.
 2.  **가상 환경 생성 및 활성화 (권장):**
-    ```bash
-    python -m venv venv
+    해당 프로젝트는 conda 가상환경을 사용했습니다.
     # Windows
-    .\venv\Scripts\activate
+    conda create -n env01 python=3.10
+    conda activate env01
     # macOS/Linux
-    source venv/bin/activate
     ```
 3.  **의존성 설치:** `requirements.txt`에 명시된 라이브러리를 설치합니다.
     ```bash

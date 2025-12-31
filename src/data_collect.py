@@ -65,5 +65,10 @@ df['sentiment'] = np.select(conditions, ['positive', 'neutral', 'negative'], def
 
 # --- 3. csv 파일 저장 ---
 
-columns = ['app', 'platform', 'reviewId', 'userName', 'content', 'score', 'thumbsUpCount', 'at']
-df[columns].to_csv(f'data/{APP_NAME_ENG}_reviews_playstore_{NUM_DATA}.csv', index=False, encoding="utf-8-sig") # utf-8-sig:윈도우+엑셀에서 한글 깨짐 방지
+columns = ['app', 'platform', 'reviewId', 'userName', 'content', 'score', 'thumbsUpCount', 'at', 'sentiment_label', 'sentiment']
+df[columns].to_csv(
+    f'data/{APP_NAME_ENG}_reviews_playstore_{NUM_DATA}.csv',
+    index=False,
+    encoding="utf-8-sig", # utf-8-sig: 윈도우+엑셀에서 한글 깨짐 방지
+    escapechar="\\" # 이스케이프 문자 지정
+    ) 

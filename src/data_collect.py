@@ -51,6 +51,7 @@ while True: # 한번의 호출가능한 수가 한정되어있으므로 반복�
 
     time.sleep(0.5) # 너무 빠르게 호출하면 에러 발생할 수 있음.
 
+pbar.close()
 print("수집한 리뷰 수:", len(all_reviews))
 
 

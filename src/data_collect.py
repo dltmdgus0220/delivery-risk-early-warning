@@ -1,6 +1,7 @@
 from google_play_scraper import reviews, Sort
 import time
 import pandas as pd
+import numpy as np
 
 # --- 0. 상수선언 ---
 
@@ -50,6 +51,16 @@ print("수집한 리뷰 수:", len(all_reviews))
 df = pd.DataFrame(all_reviews)
 df['app'] = APP_NAME_KOR
 df['platform'] = 'playstore'
+
+# 라벨링
+conditions = [
+    df['score'] >= 4,
+    df['score'] == 3,
+    df['score'] <= 2
+]
+
+df['sentiment_label'] = np.select(conditions, [1, 0, -1], default=99)
+df['sentiment'] = np.select(conditions, ['positive', 'neutral', 'negative'], default='unknown')
 
 
 # --- 3. csv 파일 저장 ---

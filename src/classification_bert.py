@@ -79,4 +79,25 @@ class TextDataset(Dataset):
         }
         return item
 
+
+# --- 3. 훈련/평가 ---
+
+def train_one_epoch(model, loader, optimizer):
+    model.train()
+    total_loss = 0.0
+
+    for batch in tqdm(loader, desc="Train", leave=True):
+        batch = {k: v.to(DEVICE) for k, v in batch.items()} # DEVICE 위에 데이터 올리기
+
+        optimizer.zero_grad()
+        out = model(**batch) # **batch: 딕셔너리 언패킹
+        loss = out.loss
+
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    return total_loss / max(1, len(loader)) # 0으로 나누는 거 방지
+
     main()

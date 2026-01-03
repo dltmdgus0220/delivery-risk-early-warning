@@ -100,4 +100,29 @@ def train_one_epoch(model, loader, optimizer):
 
     return total_loss / max(1, len(loader)) # 0으로 나누는 거 방지
 
+
+@torch.no_grad() # 데코레이터
+def eval_model(model, loader):
+    model.eval()
+    losses = []
+    y_true, y_pred = [], []
+
+    for batch in tqdm(loader, desc="Eval", leave=True):
+        batch = {k: v.to(DEVICE) for k, v in batch.items()}
+        out = model(**batch)
+
+        loss = out.loss
+        logits = out.logits
+
+        preds = torch.argmax(logits, dim=-1) # (batch_size, num_classes) -> (batch_size,)
+
+        losses.append(loss.item())
+        y_true.extend(batch["labels"].cpu().numpy().tolist()) # numpy는 cpu에서만
+        y_pred.extend(preds.cpu().numpy().tolist())
+
+    avg_loss = float(np.mean(losses))
+    acc = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+    return {"loss": avg_loss, "acc": acc, "f1": f1}
+
     main()

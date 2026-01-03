@@ -100,7 +100,6 @@ def train_one_epoch(model, loader, optimizer):
 
     return total_loss / max(1, len(loader)) # 0으로 나누는 거 방지
 
-
 @torch.no_grad() # 데코레이터
 def eval_model(model, loader):
     model.eval()
@@ -124,5 +123,27 @@ def eval_model(model, loader):
     acc = accuracy_score(y_true, y_pred)
     f1 = f1_score(y_true, y_pred)
     return {"loss": avg_loss, "acc": acc, "f1": f1}
+
+
+# --- 4. 신규 데이터 eval ---
+
+@torch.no_grad()
+def predict_texts(model, tokenizer, texts, max_len=128):
+    model.eval()
+
+    enc = tokenizer(
+        texts,
+        truncation=True,
+        padding=True,
+        max_length=max_len,
+        return_tensors="pt",
+    )
+    enc = {k: v.to(DEVICE) for k, v in enc.items()}
+
+    logits = model(**enc).logits
+    probs = torch.softmax(logits, dim=-1)
+    pred = torch.argmax(probs, dim=-1).cpu().numpy()
+    pos_prob = probs[:, 1].cpu().numpy() # binary에서 positive 확률
+    return pred, pos_prob
 
     main()

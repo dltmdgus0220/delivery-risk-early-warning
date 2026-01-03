@@ -38,4 +38,13 @@ def set_seed(seed=42):
 
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1" # 경고 안뜨게 하기
 
+
+# --- 1. 데이터로드 및 라벨처리 --- 
+
+def load_and_prepare(csv_path) -> pd.DataFrame:
+    df = pd.read_csv(csv_path, encoding='utf-8-sig')
+    df['label'] = np.select([df['sentiment_label'] == 1, df['sentiment_label'] == -1], [1, 0], default=-1) # 결측치 및 중립은 -1
+    df = df[df['label'].isin([1,0])].copy()
+    return df
+
     main()

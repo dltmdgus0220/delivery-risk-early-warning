@@ -120,8 +120,8 @@ def eval_model(model, loader):
         preds = torch.argmax(logits, dim=-1) # (batch_size, num_classes) -> (batch_size,)
 
         losses.append(loss.item())
-        y_true.extend(batch["labels"].cpu().numpy().tolist()) # numpy는 cpu에서만
-        y_pred.extend(preds.cpu().numpy().tolist())
+        y_true.extend(batch["labels"].detach().cpu().numpy().tolist()) # numpy는 cpu에서만
+        y_pred.extend(preds.detach().cpu().numpy().tolist())
 
     avg_loss = float(np.mean(losses))
     acc = accuracy_score(y_true, y_pred)
@@ -146,8 +146,8 @@ def predict_texts(model, tokenizer, texts, max_len=128):
 
     logits = model(**enc).logits
     probs = torch.softmax(logits, dim=-1)
-    pred = torch.argmax(probs, dim=-1).cpu().numpy()
-    pos_prob = probs[:, 1].cpu().numpy() # positive 확률
+    pred = torch.argmax(probs, dim=-1).detach().cpu().numpy()
+    pos_prob = probs[:, 1].detach().cpu().numpy() # positive 확률
     return pred, pos_prob
 
 
@@ -187,25 +187,6 @@ def loss_visualization(history: List[dict]):
 
 # 불확실샘플 수 확인
 @torch.no_grad()
-def count_uncertain_samples(model, loader, low=0.4, high=0.6):
-    model.eval()
-    uncertain_count = 0
-    total = 0
-
-    for batch in loader:
-        batch = {k: v.to(DEVICE) for k, v in batch.items()}
-        out = model(**batch)
-
-        probs = torch.softmax(out.logits, dim=-1)
-        pos_probs = probs[:, 1]  # positive 클래스 확률
-
-        uncertain = (pos_probs >= low) & (pos_probs <= high)
-        uncertain_count += uncertain.sum().item()
-        total += pos_probs.size(0)
-
-    return uncertain_count, total
-
-@torch.no_grad()
 def count_uncertain_by_entropy(model, loader, df, threshold=0.65):
     model.eval()
     rows = []
@@ -214,13 +195,13 @@ def count_uncertain_by_entropy(model, loader, df, threshold=0.65):
     total = 0
     
     for batch in loader:
-        batch_size = batch.size(0)
+        batch_size = batch['labels'].size(0)
         batch = {k: v.to(DEVICE) for k, v in batch.items()}
         out = model(**batch)
 
         probs = torch.softmax(out.logits, dim=-1)
-        pos_probs = probs[:, 1].cpu().numpy()
-        entropy = -torch.sum(probs * torch.log(probs + 1e-12), dim=-1)
+        pos_probs = probs[:, 1].detach().cpu().numpy()
+        entropy = -torch.sum(probs * torch.log(probs + 1e-12), dim=-1).detach().cpu().numpy()
 
         mask = (entropy >= threshold)
         uncertain_count += mask.sum().item()
@@ -305,9 +286,6 @@ def main():
     # 불확실샘플 수 확인
     total_loader = DataLoader(TextDataset(df, tokenizer, MAX_LEN),
                              batch_size=BATCH_SIZE, shuffle=False)
-    uncertain_cnt, total_cnt = count_uncertain_samples(model, total_loader)
-    print(f"불확실 샘플 수: {uncertain_cnt} / {total_cnt} "
-        f"({uncertain_cnt/total_cnt:.2%})")
     uncertain_cnt, total_cnt, df_example = count_uncertain_by_entropy(model, total_loader, df)
     print(f"[Entropy] 불확실 샘플 수: {uncertain_cnt}/{total_cnt} "
         f"({uncertain_cnt/total_cnt:.2%})")

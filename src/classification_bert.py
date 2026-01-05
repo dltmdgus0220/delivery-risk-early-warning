@@ -185,6 +185,26 @@ def loss_visualization(history: List[dict]):
     plt.tight_layout()
     plt.show()
 
+# 불확실샘플 수 확인
+@torch.no_grad()
+def count_uncertain_samples(model, loader, low=0.4, high=0.6):
+    model.eval()
+    uncertain_count = 0
+    total = 0
+
+    for batch in loader:
+        batch = {k: v.to(DEVICE) for k, v in batch.items()}
+        out = model(**batch)
+
+        probs = torch.softmax(out.logits, dim=-1)
+        pos_probs = probs[:, 1]  # positive 클래스 확률
+
+        uncertain = (pos_probs >= low) & (pos_probs <= high)
+        uncertain_count += uncertain.sum().item()
+        total += pos_probs.size(0)
+
+    return uncertain_count, total
+
 
 def main():
     set_seed(SEED)

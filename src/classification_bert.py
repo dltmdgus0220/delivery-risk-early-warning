@@ -2,6 +2,8 @@ import os
 import random
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from typing import List
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -82,6 +84,7 @@ class TextDataset(Dataset):
 
 # --- 3. 훈련/평가 ---
 
+# train
 def train_one_epoch(model, loader, optimizer):
     model.train()
     total_loss = 0.0
@@ -100,7 +103,7 @@ def train_one_epoch(model, loader, optimizer):
 
     return total_loss / max(1, len(loader)) # 0으로 나누는 거 방지
 
-
+# eval
 @torch.no_grad() # 데코레이터
 def eval_model(model, loader):
     model.eval()
@@ -148,15 +151,46 @@ def predict_texts(model, tokenizer, texts, max_len=128):
     return pred, pos_prob
 
 
-# --- 5. main ---
+# --- 5. 기타 함수 ---
+
+def loss_visualization(history: List[dict]):
+    history_df = pd.DataFrame(history)
+
+    epochs = history_df['epoch']
+    train_loss = history_df['train_loss']
+    val_loss = history_df['val_loss']
+    val_acc = history_df['val_acc']
+    val_f1 = history_df['val_f1']
+
+    # loss 곡선
+    plt.plot(epochs, train_loss, marker="o", label="Train Loss")
+    plt.plot(epochs, val_loss, marker="o", label="Val Loss")
+
+    # epoch별 annotation (val_acc, val_f1)
+    for e, vl, acc, f1 in zip(epochs, val_loss, val_acc, val_f1):
+        plt.annotate(
+            f"acc={acc:.3f}\nf1={f1:.3f}",
+            xy=(e, vl),
+            xytext=(0, 10),
+            textcoords="offset points",
+            ha="center",
+            fontsize=9
+        )
+
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Training / Validation Loss with Validation Metrics")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
 
 def main():
     set_seed(SEED)
 
     # 1) csv 로드
     df = load_and_prepare(CSV_PATH)
-    # print(len(df)) # 95511
-    # print(df['label'].value_counts()) # 1:59431, 0:36080
     # NA , "", " ", None, NaN 등 처리하기
     df["content"] = df["content"].astype("string").str.strip()
     df["content"] = df["content"].replace(["", "NA", "NaN", "nan", "None", "<NA>"], np.nan)
@@ -169,12 +203,14 @@ def main():
     val_df, test_df = train_test_split(
         temp_df, test_size=0.5, random_state=SEED, stratify=temp_df[LABEL_COL]
     )
+    print("모델 :", MODEL_ID)
     print("전체 데이터 수 :", len(df))
+    print("긍/부정 데이터 수 :", df['label'].value_counts())
     print(f"train/val/test: {len(train_df)}/{len(val_df)}/{len(test_df)}")
 
     # 3) tokenizer/model 생성
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, use_fast=True) # use_fast=True: Rust 기반 fast tokenizer 사용, 옛날모델은 미지원.
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID, num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID, num_labels=2, use_safetensors=True, force_download=True)
     model.to(DEVICE)
 
     # dataloader
@@ -188,21 +224,48 @@ def main():
     optimizer = AdamW(model.parameters(), lr=LR)
 
     # 4) train + validation
+    history = []
     for epoch in range(1, EPOCHS + 1):
         tr_loss = train_one_epoch(model, train_loader, optimizer)
         val_metrics = eval_model(model, val_loader)
+
+        history.append({
+            "epoch": epoch,
+            "train_loss": tr_loss,
+            "val_loss": val_metrics['loss'],
+            'val_acc': val_metrics['acc'],
+            'val_f1': val_metrics['f1']
+        })
+
         print(f"[Epoch {epoch}] train_loss={tr_loss:.4f} | "
               f"val_loss={val_metrics['loss']:.4f} val_acc={val_metrics['acc']:.4f} val_f1={val_metrics['f1']:.4f}")
-
+        
     # test 평가
     test_metrics = eval_model(model, test_loader)
     print(f"[TEST] loss={test_metrics['loss']:.4f} acc={test_metrics['acc']:.4f} f1={test_metrics['f1']:.4f}")
+
+    # loss 시각화
+    if EPOCHS > 1:
+        loss_visualization(history)
+
+    # 불확실샘플 수 확인
+    total_loader = DataLoader(TextDataset(df, tokenizer, MAX_LEN),
+                             batch_size=BATCH_SIZE, shuffle=False)
+    uncertain_cnt, total_cnt = count_uncertain_samples(model, total_loader)
+    print(f"불확실 샘플 수: {uncertain_cnt} / {total_cnt} "
+        f"({uncertain_cnt/total_cnt:.2%})")
+    uncertain_cnt, total_cnt, df_example = count_uncertain_by_entropy(model, total_loader, df)
+    print(f"[Entropy] 불확실 샘플 수: {uncertain_cnt}/{total_cnt} "
+        f"({uncertain_cnt/total_cnt:.2%})")
+    df_example.to_csv('/data/baemin_reviews_playstore_complex_sentiment.csv', encoding='utf-8-sig', escapechar="\\")
 
     # 5) 신규 데이터 eval
     new_texts = [
         "배달이 너무 늦고 고객센터도 답이 없어요",
         "배달도 빠르고 음식도 따뜻하게 와서 만족합니다",
-        "배차 시스템이 문제인지 배달이 너무 느려요. 그래도 혜택은 만족합니다."
+        "배차 시스템이 문제인지 배달이 너무 느려요. 그래도 혜택은 만족합니다.",
+        "배달은 늦었는데 쿠폰은 좋음",
+        "상담은 별로지만 기사님은 친절",
     ]
     pred, pos_prob = predict_texts(model, tokenizer, new_texts, max_len=MAX_LEN)
     for t, p, pr in zip(new_texts, pred, pos_prob):

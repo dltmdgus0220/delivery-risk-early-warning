@@ -205,6 +205,38 @@ def count_uncertain_samples(model, loader, low=0.4, high=0.6):
 
     return uncertain_count, total
 
+@torch.no_grad()
+def count_uncertain_by_entropy(model, loader, df, threshold=0.65):
+    model.eval()
+    rows = []
+    start = 0
+    uncertain_count = 0
+    total = 0
+    
+    for batch in loader:
+        batch_size = batch.size(0)
+        batch = {k: v.to(DEVICE) for k, v in batch.items()}
+        out = model(**batch)
+
+        probs = torch.softmax(out.logits, dim=-1)
+        pos_probs = probs[:, 1].cpu().numpy()
+        entropy = -torch.sum(probs * torch.log(probs + 1e-12), dim=-1)
+
+        mask = (entropy >= threshold)
+        uncertain_count += mask.sum().item()
+        total += probs.size(0)
+
+        selected = df.iloc[start:start + batch_size][mask].copy()
+        selected["pos_prob"] = pos_probs[mask]
+        selected["entropy"] = entropy[mask]
+        rows.append(selected)
+
+        start += batch_size
+
+    example_df = (pd.concat(rows, ignore_index=True) if rows else pd.DataFrame())
+
+    return uncertain_count, total, example_df
+
 
 def main():
     set_seed(SEED)

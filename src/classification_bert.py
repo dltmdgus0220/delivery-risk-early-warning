@@ -19,7 +19,7 @@ from tqdm import tqdm
 # --- 0. 설정 ---
 
 SEED = 42
-MODEL_ID = "klue/bert-base"  # nlp4all/LMKor-BERT-base
+MODEL_ID = "kykim/bert-kor-base"  # klue/bert-base, 참고:https://github.com/kiyoungkim1/LMkor
 CSV_PATH = "data/baemin_reviews_playstore_100000.csv"
 
 TEXT_COL = "content" # 독립변수
@@ -237,6 +237,8 @@ def count_uncertain_by_entropy(model, loader, df, threshold=0.65):
 
     return uncertain_count, total, example_df
 
+
+# --- 6. main ---
 
 def main():
     set_seed(SEED)

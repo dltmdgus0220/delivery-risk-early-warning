@@ -100,6 +100,7 @@ def train_one_epoch(model, loader, optimizer):
 
     return total_loss / max(1, len(loader)) # 0으로 나누는 거 방지
 
+
 @torch.no_grad() # 데코레이터
 def eval_model(model, loader):
     model.eval()
@@ -143,7 +144,71 @@ def predict_texts(model, tokenizer, texts, max_len=128):
     logits = model(**enc).logits
     probs = torch.softmax(logits, dim=-1)
     pred = torch.argmax(probs, dim=-1).cpu().numpy()
-    pos_prob = probs[:, 1].cpu().numpy() # binary에서 positive 확률
+    pos_prob = probs[:, 1].cpu().numpy() # positive 확률
     return pred, pos_prob
 
+
+# --- 5. main ---
+
+def main():
+    set_seed(SEED)
+
+    # 1) csv 로드
+    df = load_and_prepare(CSV_PATH)
+    # print(len(df)) # 95511
+    # print(df['label'].value_counts()) # 1:59431, 0:36080
+    # NA , "", " ", None, NaN 등 처리하기
+    df["content"] = df["content"].astype("string").str.strip()
+    df["content"] = df["content"].replace(["", "NA", "NaN", "nan", "None", "<NA>"], np.nan)
+    df = df.dropna(subset=["content"]).reset_index(drop=True)
+
+    # 2) train/val/test 분할 (8/1/1)
+    train_df, temp_df = train_test_split(
+        df, test_size=0.2, random_state=SEED, stratify=df[LABEL_COL]
+    )
+    val_df, test_df = train_test_split(
+        temp_df, test_size=0.5, random_state=SEED, stratify=temp_df[LABEL_COL]
+    )
+    print("전체 데이터 수 :", len(df))
+    print(f"train/val/test: {len(train_df)}/{len(val_df)}/{len(test_df)}")
+
+    # 3) tokenizer/model 생성
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, use_fast=True) # use_fast=True: Rust 기반 fast tokenizer 사용, 옛날모델은 미지원.
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID, num_labels=2)
+    model.to(DEVICE)
+
+    # dataloader
+    train_loader = DataLoader(TextDataset(train_df, tokenizer, MAX_LEN),
+                              batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(TextDataset(val_df, tokenizer, MAX_LEN),
+                            batch_size=BATCH_SIZE, shuffle=False)
+    test_loader = DataLoader(TextDataset(test_df, tokenizer, MAX_LEN),
+                             batch_size=BATCH_SIZE, shuffle=False)
+
+    optimizer = AdamW(model.parameters(), lr=LR)
+
+    # 4) train + validation
+    for epoch in range(1, EPOCHS + 1):
+        tr_loss = train_one_epoch(model, train_loader, optimizer)
+        val_metrics = eval_model(model, val_loader)
+        print(f"[Epoch {epoch}] train_loss={tr_loss:.4f} | "
+              f"val_loss={val_metrics['loss']:.4f} val_acc={val_metrics['acc']:.4f} val_f1={val_metrics['f1']:.4f}")
+
+    # test 평가
+    test_metrics = eval_model(model, test_loader)
+    print(f"[TEST] loss={test_metrics['loss']:.4f} acc={test_metrics['acc']:.4f} f1={test_metrics['f1']:.4f}")
+
+    # 5) 신규 데이터 eval
+    new_texts = [
+        "배달이 너무 늦고 고객센터도 답이 없어요",
+        "배달도 빠르고 음식도 따뜻하게 와서 만족합니다",
+        "배차 시스템이 문제인지 배달이 너무 느려요. 그래도 혜택은 만족합니다."
+    ]
+    pred, pos_prob = predict_texts(model, tokenizer, new_texts, max_len=MAX_LEN)
+    for t, p, pr in zip(new_texts, pred, pos_prob):
+        label = "positive" if p == 1 else "negative"
+        print(f"\nTEXT: {t}\nPRED: {label} (pos_prob={pr:.3f})")
+
+
+if __name__ == "__main__":
     main()

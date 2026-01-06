@@ -131,3 +131,14 @@ def main():
         except Exception as e:
             print(f"Critical Error at batch {i}: {e}")
 
+    # 데이터 저장
+    df_sample[f"{args.task_name}_label"] = out_labels
+    df_sample[f"{args.task_name}_confidence"] = out_confs
+
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True) # 부모디렉토리
+    df_sample.to_csv(args.out, index=False, encoding="utf-8-sig")
+    print(f"저장완료: {args.out} ({len(df_sample)}개)")
+
+
+if __name__ == "__main__":
+    main()

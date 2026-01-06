@@ -39,3 +39,26 @@ def build_batch_prompt(texts: List[str], task_name: str, labels: List[str], task
 ]
 """.strip()
 
+
+def extract_json(s: str) -> Any:
+    s = (s or "").strip()
+    
+    # 1) 마크다운 코드 블록 제거 (```json 또는 ``` 제거)
+    s = re.sub(r"```json\s*|```", "", s).strip()
+    
+    # 2) 대괄호 [ ] 또는 중괄호 { } 사이의 내용만 추출
+    # 배치 처리 시에는 리스트([])로 올 확률이 높으므로 둘 다 대응
+    start_idx = s.find("[")
+    end_idx = s.rfind("]")
+    
+    if start_idx == -1 or end_idx == -1:
+        # 리스트가 아니라 단일 객체일 경우 대비
+        start_idx = s.find("{")
+        end_idx = s.rfind("}")
+
+    if start_idx == -1 or end_idx == -1 or end_idx <= start_idx:
+        raise ValueError(f"유효한 JSON 형식을 찾을 수 없습니다. 응답 내용: {s[:100]}...")
+        
+    json_str = s[start_idx : end_idx + 1]
+    return json.loads(json_str)
+

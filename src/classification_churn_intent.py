@@ -243,3 +243,21 @@ def main():
     print("학습 데이터 수 :", len(df))
     print("이탈의도 클래스별 학습 데이터 수 :", df['label'].value_counts())
 
+    # 2) train/val 분할
+    train_df, val_df = train_test_split(df, test_size=0.2, random_state=SEED, shuffle=True, stratify=df["label"])
+
+    # 3) tokenizer/model 생성
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, use_fast=True) # use_fast=True: Rust 기반 fast tokenizer 사용, 옛날모델은 미지원.
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID, num_labels=3, use_safetensors=True) # 만약 버전에러나면 force_download=True 추가
+    model.to(DEVICE)
+
+    # dataloader
+    train_loader = DataLoader(TrainTextDataset(train_df, tokenizer, MAX_LEN),
+                              batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(TrainTextDataset(val_df, tokenizer, MAX_LEN),
+                              batch_size=BATCH_SIZE, shuffle=False)
+    test_loader = DataLoader(InferTextDataset(new_df, tokenizer, MAX_LEN),
+                              batch_size=BATCH_SIZE, shuffle=False)
+
+    optimizer = AdamW(model.parameters(), lr=LR)
+

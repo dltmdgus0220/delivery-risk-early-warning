@@ -47,3 +47,19 @@ topic_model = BERTopic(
 print("토픽 모델링 학습 시작")
 topics, probs = topic_model.fit_transform(df['cleaned_text'])
 
+
+# --- 5. 결과 ---
+
+# 각 토픽별 핵심 키워드와 빈도수 확인
+topic_info = topic_model.get_topic_info()
+print(type(topic_info))
+print(topic_info.head(10))
+
+# 6. 시각화 (인터랙티브 차트)
+topic_chart = topic_model.visualize_topics()
+topic_chart.write_html("topic_distance_map.html") # 파일로 저장
+
+keyword_chart = topic_model.visualize_barchart(top_n_topics=10)
+keyword_chart.write_html("topic_keywords.html") # 토픽별 키워드 막대그래프 저장
+
+print("분석 완료")

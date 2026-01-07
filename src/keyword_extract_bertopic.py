@@ -31,3 +31,19 @@ sentence_model = SentenceTransformer("kimseongsan/ko-sbert-384-reduced") # 문�
 # 키워드 추출 시 불용어 제거를 위한 Vectorizer 설정
 vectorizer_model = CountVectorizer(stop_words=STOPWORDS, min_df=10, max_df=0.95) # min_df: 최소빈도, max_df: 최대빈도
 
+
+# --- 4. BERTopic 모델 생성 및 학습 ---
+
+# 임베딩(sentence_model) -> 차원축소(UMAP) -> 군집화(HDBSCAN) -> 키워드추출(c-TF-IDF)
+topic_model = BERTopic(
+    embedding_model=sentence_model,
+    vectorizer_model=vectorizer_model,
+    nr_topics=20, # auto : 토픽 개수 자동 조절
+    verbose=True, # 진행바 활성
+    low_memory=True, # 메모리 절약 모드
+    # calculate_probabilities=False # 메모리 부족 방지를 위해 False 설정
+)
+
+print("토픽 모델링 학습 시작")
+topics, probs = topic_model.fit_transform(df['cleaned_text'])
+

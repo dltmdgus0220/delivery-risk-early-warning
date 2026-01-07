@@ -227,3 +227,19 @@ def predict_texts(model, loader, threshold=0.6):
 
     return y_pred, y_conf, mask
 
+
+# --- 5. main ---
+
+def main():
+    set_seed(SEED)
+
+    # 1) csv 로드
+    new_df = pd.read_csv(CSV_PATH, encoding='utf-8-sig')
+    new_df = drop_text(new_df)
+    df = load_and_prepare(TRAIN_CSV_PATH)
+
+    print("모델 :", MODEL_ID)
+    print("전체 데이터 수 :", len(new_df))
+    print("학습 데이터 수 :", len(df))
+    print("이탈의도 클래스별 학습 데이터 수 :", df['label'].value_counts())
+

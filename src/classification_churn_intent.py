@@ -201,3 +201,29 @@ def eval_model(model, loader):
     f1 = f1_score(y_true, y_pred, average="macro") # 다중클래스일때는 average='macro'
     return {"loss": avg_loss, "acc": acc, "f1": f1}
 
+
+# --- 4. 신규 데이터 예측 ---
+
+@torch.no_grad()
+def predict_texts(model, loader, threshold=0.6):
+    model.eval()
+    y_pred, y_conf, mask = [], [], []
+
+    for batch in tqdm(loader, desc="Predict", leave=True):
+        batch = {k: v.to(DEVICE) for k, v in batch.items() if k in ['input_ids', 'attention_mask']}
+        out = model(**batch)
+
+        logits = out.logits
+
+        probs = torch.softmax(logits, dim=-1) # (batch_size, num_classes) -> (batch_size, num_classes)
+        conf, preds = torch.max(probs, dim=-1) # (batch_size, num_classes) -> (batch_size,2), 가장 큰 확률과 인덱스를 반환
+
+        y_pred.extend(preds.detach().cpu().numpy().tolist())
+        y_conf.extend(conf.detach().cpu().numpy().tolist())
+
+        # threshold 미만 row_id 저장
+        low_mask = conf < threshold
+        mask.extend(low_mask.detach().cpu().numpy().tolist())
+
+    return y_pred, y_conf, mask
+

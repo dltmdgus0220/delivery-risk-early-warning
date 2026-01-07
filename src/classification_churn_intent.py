@@ -261,3 +261,20 @@ def main():
 
     optimizer = AdamW(model.parameters(), lr=LR)
 
+    # 4) train + validation
+    history = []
+    for epoch in range(1, EPOCHS + 1):
+        tr_loss = train_one_epoch(model, train_loader, optimizer)
+        val_metrics = eval_model(model, val_loader)
+
+        history.append({
+            "epoch": epoch,
+            "train_loss": tr_loss,
+            "val_loss": val_metrics['loss'],
+            'val_acc': val_metrics['acc'],
+            'val_f1': val_metrics['f1']
+        })
+
+        print(f"[Epoch {epoch}] train_loss={tr_loss:.4f} | "
+              f"val_loss={val_metrics['loss']:.4f} val_acc={val_metrics['acc']:.4f} val_f1={val_metrics['f1']:.4f}")
+        

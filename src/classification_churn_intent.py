@@ -147,3 +147,28 @@ def weighted_cross_entropy(logits, labels, confidences):
     weighted_loss = (loss * confidences).mean()
     return weighted_loss
 
+# train
+def train_one_epoch(model, loader, optimizer):
+    model.train()
+    total_loss = 0.0
+
+    for batch in tqdm(loader, desc="Train", leave=True):
+        input_ids = batch['input_ids'].to(DEVICE)
+        attention_mask = batch['attention_mask'].to(DEVICE)
+        labels = batch['labels'].to(DEVICE)
+        confidences = batch['confidences'].to(DEVICE)
+
+        optimizer.zero_grad()
+
+        outputs = model(input_ids, attention_mask=attention_mask)
+        logits = outputs.logits
+
+        loss = weighted_cross_entropy(logits, labels, confidences)
+
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    return total_loss / max(1, len(loader)) # 0으로 나누는 거 방지
+

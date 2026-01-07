@@ -42,3 +42,34 @@ def set_seed(seed=42):
 
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1" # 경고 안뜨게 하기
 
+
+# --- 1. 데이터로드 및 라벨처리 --- 
+
+def drop_text(df: pd.DataFrame):
+    df[TEXT_COL] = df[TEXT_COL].astype("string").str.strip()
+    df[TEXT_COL] = df[TEXT_COL].replace(["", "NA", "NaN", "nan", "None", "<NA>"], np.nan)
+    df = df.dropna(subset=[TEXT_COL]).reset_index(drop=True)
+    return df
+
+def load_and_prepare(csv_path: str) -> pd.DataFrame:
+    df = pd.read_csv(csv_path, encoding="utf-8-sig")
+
+    # 텍스트 정리
+    df = drop_text(df)
+
+    # 문자열 라벨 -> 숫자 라벨
+    df["label"] = np.select(
+        [
+            df[LABEL_COL] == "없음",
+            df[LABEL_COL] == "약함",
+            df[LABEL_COL] == "강함",
+        ],
+        [0, 1, 2],
+        default=-1
+    )
+
+    # 라벨 변환 실패(-1) 제거
+    df = df[df["label"] != -1].reset_index(drop=True)
+
+    return df
+

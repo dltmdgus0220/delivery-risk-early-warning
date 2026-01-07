@@ -16,3 +16,8 @@ def extract_nouns(text):
     # NNG(일반명사), NNP(고유명사), XR(어근) 추출
     return " ".join([t.form for t in result if t.tag in ['NNG', 'NNP', 'XR'] and len(t.form) > 1])
 
+
+# --- 2. 데이터 로드 및 전처리 ---
+df = pd.read_csv("data\out2.csv", encoding='utf-8-sig')
+df['cleaned_text'] = df['content'].apply(extract_nouns)
+

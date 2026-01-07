@@ -172,3 +172,32 @@ def train_one_epoch(model, loader, optimizer):
 
     return total_loss / max(1, len(loader)) # 0으로 나누는 거 방지
 
+# eval
+@torch.no_grad() # 데코레이터
+def eval_model(model, loader):
+    model.eval()
+    losses = []
+    y_true, y_pred = [], []
+
+    for batch in tqdm(loader, desc="Eval", leave=True):
+        input_ids = batch['input_ids'].to(DEVICE)
+        attention_mask = batch['attention_mask'].to(DEVICE)
+        labels = batch['labels'].to(DEVICE)
+        confidences = batch['confidences'].to(DEVICE)
+
+        outputs = model(input_ids, attention_mask=attention_mask)
+
+        logits = outputs.logits
+        loss = weighted_cross_entropy(logits, labels, confidences)
+
+        preds = torch.argmax(logits, dim=-1) # (batch_size, num_classes) -> (batch_size,)
+
+        losses.append(loss.item())
+        y_true.extend(batch["labels"].detach().cpu().numpy().tolist()) # numpy는 cpu에서만
+        y_pred.extend(preds.detach().cpu().numpy().tolist())
+
+    avg_loss = float(np.mean(losses))
+    acc = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred, average="macro") # 다중클래스일때는 average='macro'
+    return {"loss": avg_loss, "acc": acc, "f1": f1}
+

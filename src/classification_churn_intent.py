@@ -135,3 +135,15 @@ class InferTextDataset(Dataset):
         }
         return item
 
+
+# --- 3. 훈련/평가 ---
+
+# 가중치 계산 함수
+def weighted_cross_entropy(logits, labels, confidences):
+    # reduction='none'으로 설정하여 각 샘플별 Loss를 먼저 구함, 원래는 배치별로 평균치를 구해서 계산함. 우리는 각 샘플별 confidence가 중요하기 때문에 none으로 설정
+    loss_fct = nn.CrossEntropyLoss(reduction='none')
+    loss = loss_fct(logits, labels)
+    
+    weighted_loss = (loss * confidences).mean()
+    return weighted_loss
+

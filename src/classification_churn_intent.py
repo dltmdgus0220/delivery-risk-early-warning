@@ -278,3 +278,14 @@ def main():
         print(f"[Epoch {epoch}] train_loss={tr_loss:.4f} | "
               f"val_loss={val_metrics['loss']:.4f} val_acc={val_metrics['acc']:.4f} val_f1={val_metrics['f1']:.4f}")
         
+    # 5) 예측
+    preds, confs, mask = predict_texts(model, test_loader)
+    new_df['churn_intent_label'] = [id2label[p] for p in preds]
+    new_df['churn_intent_confidence'] = [round(c, 4) for c in confs]
+
+    new_df.to_csv('data/out2.csv', encoding='utf-8-sig', escapechar='\\')
+    new_df[mask].to_csv('data/out3.csv', encoding='utf-8-sig', escapechar='\\')
+
+
+if __name__ == "__main__":
+    main()

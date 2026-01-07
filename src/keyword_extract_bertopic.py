@@ -21,3 +21,13 @@ def extract_nouns(text):
 df = pd.read_csv("data\out2.csv", encoding='utf-8-sig')
 df['cleaned_text'] = df['content'].apply(extract_nouns)
 
+
+# --- 3. 모델 설정 ---
+# 한국어 임베딩에 최적화된 모델 사용
+# Huggingface에 ko sentence transformer or ko sbert 검색
+# jhgan/ko-sbert-multitask : torch v2.6 이상 필요, 제일 좋을 것 같은데 버전 안맞음
+sentence_model = SentenceTransformer("kimseongsan/ko-sbert-384-reduced") # 문장 전체 임베딩 : 문장 내 단어들의 관계를 고려하여 각 문장마다 하나의 임베딩벡터 만들어줌.
+
+# 키워드 추출 시 불용어 제거를 위한 Vectorizer 설정
+vectorizer_model = CountVectorizer(stop_words=STOPWORDS, min_df=10, max_df=0.95) # min_df: 최소빈도, max_df: 최대빈도
+

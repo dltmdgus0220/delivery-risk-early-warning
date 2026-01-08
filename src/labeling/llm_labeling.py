@@ -8,40 +8,48 @@ from typing import Any, List
 import pandas as pd
 from google import genai  # pip install -U google-genai
 
-
-def build_batch_prompt(texts: List[str], task_name: str, labels: List[str], task_desc: str) -> str:
-    labels_str = ", ".join([f'"{x}"' for x in labels]) # [없음, 약함, 강함] -> "없음", "약함", "강함", 따옴표로 감싸줌으로써 LLM이 라벨을 맘대로 바꾸는 경우를 방지
-    # 텍스트 리스트를 번호가 매겨진 문자열로 변환, 그래야 LLM이 실수없이 잘 이해할 수 있음
-    input_texts = "\n".join([f"[{i+1}] {t}" for i, t in enumerate(texts)])
+   
+def build_batch_prompt(texts: List[str], ratings: List[int]) -> str:
+    # LLM이 실수없이 잘 이해할 수 있도록 "ID_1: (별점 5점) 맛있어요" 형식으로 묶음.
+    combined_inputs = "\n".join([
+        f"ID_{i+1}: (별점 {r}점) {t}" for i, (r, t) in enumerate(zip(ratings, texts))
+    ])
     
     return f"""
-너는 숙련된 데이터 라벨러다. 아래 라벨 정의에 따라 {len(texts)}개의 텍스트를 각각 분류한다.
-반드시 JSON 리스트만 출력한다(마크다운 금지).
-중요: 절대로 생략하지 말고 ID_1부터 ID_50까지 모든 항목에 대해 하나씩 JSON 객체를 생성해라. 답변이 길어져도 끝까지 작성해라.
+너는 숙련된 고객 경험 분석가이자 데이터 라벨러다. 아래 가이드라인을 바탕으로 배달 앱 리뷰 {len(texts)}개를 분석하라.
 
-[태스크]
-- task_name: {task_name}
-- labels: [{labels_str}]
-- description: {task_desc}
+### [분류 가이드라인]
+1. 0 (없음): 긍정적 경험. 불만이 있더라도 재이용 의사가 높거나 단순 건의인 경우.
+2. 1 (약함): 서비스에 실망했으나 "다음에는 잘해달라"는 개선 요구가 있거나, 단순 불평에 그친 경우.
+3. 2 (강함): 재이용 거부 의사 표명("다시는 안 함", "삭제", "돈 아깝다") 또는 위생/태도 등 치명적 결함. 반복된 불만 표출 포함.
 
-[분류 규칙]
-1. 반드시 {len(texts)}개의 결과가 포함된 하나의 JSON 리스트만 출력한다.
-2. 각 객체는 "label"과 "confidence" 키를 가져야 한다.
-3. 텍스트 내용이 짧거나 모호해도 반드시 가장 적절한 라벨을 선택한다.
+### [분류 규칙]
+- 비꼬기 주의: 별점은 낮으나 내용은 긍정적(예: "진짜 빨리 오네요ㅋㅋ")인 경우 문맥상 비꼬는 것(강함)으로 판단하라.
+- 과거 경험 언급: "저번에도 이러더니 이번에도 그러네요"처럼 반복된 불만이 보이면 즉시 '강함'으로 분류하라.
+- 복합 감정 처리: 불만 강도에 따라 '약함' 또는 '강함'로 분류하라.
+- 반드시 제공된 ID_1부터 ID_{len(texts)}까지 순서대로 누락 없이 라벨링하라.
+- 결과는 반드시 마크다운 없이 JSON 리스트 형식으로만 출력하라.
 
-[입력 텍스트 리스트]
-{input_texts}
+### [입력 데이터]
+{combined_inputs}
 
-[출력 JSON 형식(예시)]
+### [출력 형식 및 예시]
 [
-  {{"label": "없음", "confidence": 0.9}},
-  {{"label": "강함", "confidence": 0.8}}
+  {{
+    "id": 1,
+    "churn_intent": "강함",
+    "churn_intent_label": 2,
+    "confidence": 0.9,
+    "reason": "재구매 의사가 없음을 명확히 밝힘",
+    "keywords": ["다시는안시킴", "위생불량"]
+  }}
 ]
 """.strip()
 
 
 def extract_json(s: str) -> Any:
     s = (s or "").strip()
+    # print(f"DEBUG: {s}")
     
     # 1) 마크다운 코드 블록 제거 (```json 또는 ``` 제거)
     s = re.sub(r"```json\s*|```", "", s).strip()
@@ -67,40 +75,35 @@ def main():
     p = argparse.ArgumentParser(description="LLM(Gemini)로 CSV 일부 자동 라벨링")
     p.add_argument("--csv", required=True, help="입력 CSV 경로")
     p.add_argument("--text-col", default="content", help="텍스트 컬럼명")
+    p.add_argument("--score-col", default="score", help="별점 컬럼명")
     p.add_argument("--out", required=True, help="저장 CSV 경로")
     p.add_argument("--n", type=int, default=200, help="라벨링할 샘플 수")
+    p.add_argument("--batch", type=int, default=50, help="한 번에 처리할 샘플 수")
     p.add_argument("--seed", type=int, default=42, help="샘플링 시드")
     p.add_argument("--model", default="gemini-2.5-flash", help="Gemini 모델명") # gemini-1.5-flash
 
-    # 태스크(기본: churn_intent)
-    p.add_argument("--task-name", default="churn_intent")
-    p.add_argument("--labels", default="없음,약함,강함", help="콤마 구분 라벨 목록") # 공백이 있으면 공백단위로 쪼개지기 때문에 쉼표단위로 쪼개기위해 공백은 없어야함.
-    p.add_argument(
-        "--task-desc",
-        default=(
-            "리뷰/문장에 '서비스를 떠날 의도(삭제, 탈퇴, 갈아타기, 다시는 안씀 등)'가 있는지 분류. "
-            "없음=이탈 의도 없음, 약함=불만은 있으나 이탈이 명시적이지 않음, 강함=이탈/삭제/갈아타기 의도가 명시적임."
-        ),
-    )
 
     args = p.parse_args()
-    labels = [x.strip() for x in args.labels.split(",") if x.strip()] # "없음,약함,강함" -> [없음, 약함, 강함]
     
     df = pd.read_csv(args.csv)
-    df = df.dropna(subset=[args.text_col]).copy()
+    df = df.dropna(subset=[args.text_col, args.score_col]).copy()
     df_sample = df.sample(n=min(args.n, len(df)), random_state=args.seed).reset_index(drop=True)
 
-    client = genai.Client()
+    client = genai.Client() # $env:GEMINI_API_KEY='AIzaSy어쩌구'
 
-    out_labels, out_confs = [], []
-    batch_size = 50  # 한 번에 50개씩 묶어서 처리
+    out_churn_intent, out_churn_intent_label, out_confidence, out_reason, out_keywords = [], [], [], [], []
+    batch_size = args.batch # 200까지는 안정적
     
+    start = time.time()
     for i in range(0, len(df_sample), batch_size):
-        batch_texts = df_sample[args.text_col].iloc[i : i + batch_size].astype(str).tolist()
-        prompt = build_batch_prompt(batch_texts, args.task_name, labels, args.task_desc)
-        
+        batch_slice = df_sample.iloc[i : i + batch_size]
+        batch_texts = batch_slice[args.text_col].astype(str).tolist()
+        batch_ratings = batch_slice[args.score_col].astype(int).tolist()
+
+        prompt = build_batch_prompt(batch_texts, batch_ratings)
         print(f"[{i+1}/{len(df_sample)}] 배치 준비")
         
+        success = False
         try:
             # retry 로직 포함
             success = False
@@ -111,8 +114,11 @@ def main():
                     
                     if isinstance(data, list) and len(data) == len(batch_texts): # 리스트가 맞는지, 보낸 텍스트 개수 == 받은 결과 개수
                         for item in data:
-                            out_labels.append(item.get("label"))
-                            out_confs.append(item.get("confidence"))
+                            out_churn_intent.append(item.get("churn_intent"))
+                            out_churn_intent_label.append(item.get("churn_intent_label"))
+                            out_confidence.append(item.get("confidence"))
+                            out_reason.append(item.get("reason"))
+                            out_keywords.append(item.get("keywords"))
                         success = True
                         break
                 except Exception as e:
@@ -120,9 +126,12 @@ def main():
                     time.sleep(20)
             
             if not success:
-                # 실패 시 더미 데이터 삽입
-                out_labels.extend(["Error"] * len(batch_texts))
-                out_confs.extend([0.0] * len(batch_texts))
+                print(f"배치 {i} 최종 실패. 더미 데이터 삽입.")
+                out_churn_intent.extend(["Error"] * len(batch_texts))
+                out_churn_intent_label.extend([-1] * len(batch_texts))
+                out_confidence.extend([0.0] * len(batch_texts))
+                out_reason.extend(["Error"] * len(batch_texts))
+                out_keywords.extend([[]] * len(batch_texts))
 
             # 무료 버전일 경우 RPM 5를 넘기면 에러가 발생하므로 지연시간 필요
             print("20초 대기")
@@ -130,15 +139,22 @@ def main():
 
         except Exception as e:
             print(f"Critical Error at batch {i}: {e}")
+    end = time.time()
+    print(f"라벨링완료 - {int(end-start)}초 소요")
 
     # 데이터 저장
-    df_sample[f"{args.task_name}_label"] = out_labels
-    df_sample[f"{args.task_name}_confidence"] = out_confs
+    df_sample[f"churn_intent"] = out_churn_intent
+    df_sample[f"churn_intent_label"] = out_churn_intent_label
+    df_sample[f"confidence"] = out_confidence
+    df_sample[f"reason"] = out_reason
+    df_sample[f"keywords"] = out_keywords
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True) # 부모디렉토리
     df_sample.to_csv(args.out, index=False, encoding="utf-8-sig")
     print(f"저장완료: {args.out} ({len(df_sample)}개)")
 
+    low_confidence_data = df_sample[df_sample['confidence'] < 0.6]
+    print(f"검수가 필요한 데이터 개수: {len(low_confidence_data)}")
 
 if __name__ == "__main__":
     main()

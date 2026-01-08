@@ -19,7 +19,8 @@ def extract_nouns(text):
 
 # --- 2. 데이터 로드 및 전처리 ---
 df = pd.read_csv("data\out2.csv", encoding='utf-8-sig')
-df['cleaned_text'] = df['content'].apply(extract_nouns)
+df_copy = df[df['churn_intent'] == "강함"].copy()
+df_copy['cleaned_text'] = df_copy['content'].apply(extract_nouns)
 
 
 # --- 3. 모델 설정 ---
@@ -45,7 +46,8 @@ topic_model = BERTopic(
 )
 
 print("토픽 모델링 학습 시작")
-topics, probs = topic_model.fit_transform(df['cleaned_text'])
+print("샘플 수 :", len(df_copy))
+topics, probs = topic_model.fit_transform(df_copy['cleaned_text'])
 
 
 # --- 5. 결과 ---

@@ -260,7 +260,8 @@ def main():
         
     # 5) 예측
     preds, confs, mask = predict_texts(model, test_loader)
-    new_df['churn_intent_label'] = [id2label[p] for p in preds]
+    new_df['churn_intent'] = [id2label[p] for p in preds]
+    new_df['churn_intent_label'] = preds
     new_df['churn_intent_confidence'] = [round(c, 4) for c in confs]
 
     new_df.to_csv('data/out2.csv', encoding='utf-8-sig', escapechar='\\')

@@ -39,7 +39,7 @@ def build_batch_prompt(texts: List[str], ratings: List[int]) -> str:
     "id": 1,
     "churn_intent": "강함",
     "churn_intent_label": 2,
-    "confidence": 0.9,
+    "churn_intent_confidence": 0.9,
     "reason": "재구매 의사가 없음을 명확히 밝힘",
     "keywords": ["다시는안시킴", "위생불량"]
   }}
@@ -91,7 +91,7 @@ def main():
 
     client = genai.Client() # $env:GEMINI_API_KEY='AIzaSy어쩌구'
 
-    out_churn_intent, out_churn_intent_label, out_confidence, out_reason, out_keywords = [], [], [], [], []
+    out_churn_intent, out_churn_intent_label, out_churn_intent_confidence, out_reason, out_keywords = [], [], [], [], []
     batch_size = args.batch # 200까지는 안정적
     
     start = time.time()
@@ -116,7 +116,7 @@ def main():
                         for item in data:
                             out_churn_intent.append(item.get("churn_intent"))
                             out_churn_intent_label.append(item.get("churn_intent_label"))
-                            out_confidence.append(item.get("confidence"))
+                            out_churn_intent_confidence.append(item.get("churn_intent_confidence"))
                             out_reason.append(item.get("reason"))
                             out_keywords.append(item.get("keywords"))
                         success = True
@@ -129,7 +129,7 @@ def main():
                 print(f"배치 {i} 최종 실패. 더미 데이터 삽입.")
                 out_churn_intent.extend(["Error"] * len(batch_texts))
                 out_churn_intent_label.extend([-1] * len(batch_texts))
-                out_confidence.extend([0.0] * len(batch_texts))
+                out_churn_intent_confidence.extend([0.0] * len(batch_texts))
                 out_reason.extend(["Error"] * len(batch_texts))
                 out_keywords.extend([[]] * len(batch_texts))
 
@@ -143,17 +143,17 @@ def main():
     print(f"라벨링완료 - {int(end-start)}초 소요")
 
     # 데이터 저장
-    df_sample[f"churn_intent"] = out_churn_intent
-    df_sample[f"churn_intent_label"] = out_churn_intent_label
-    df_sample[f"confidence"] = out_confidence
-    df_sample[f"reason"] = out_reason
-    df_sample[f"keywords"] = out_keywords
+    df_sample["churn_intent"] = out_churn_intent
+    df_sample["churn_intent_label"] = out_churn_intent_label
+    df_sample["churn_intent_confidence"] = out_churn_intent_confidence
+    df_sample["reason"] = out_reason
+    df_sample["keywords"] = out_keywords
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True) # 부모디렉토리
     df_sample.to_csv(args.out, index=False, encoding="utf-8-sig")
     print(f"저장완료: {args.out} ({len(df_sample)}개)")
 
-    low_confidence_data = df_sample[df_sample['confidence'] < 0.6]
+    low_confidence_data = df_sample[df_sample['churn_intent_confidence'] < 0.6]
     print(f"검수가 필요한 데이터 개수: {len(low_confidence_data)}")
 
 if __name__ == "__main__":

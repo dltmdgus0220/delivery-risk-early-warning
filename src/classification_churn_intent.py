@@ -27,7 +27,7 @@ LABEL_COL = "churn_intent_label"
 
 MAX_LEN = 128
 BATCH_SIZE = 16
-EPOCHS = 3
+EPOCHS = 5
 LR = 2e-5 # BERT에서 거의 표준으로 사용하는 학습률
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # gpu를 위한 코드
 
@@ -45,32 +45,13 @@ os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1" # 경고 안뜨게 하기
 
 # --- 1. 데이터로드 및 라벨처리 --- 
 
-def drop_text(df: pd.DataFrame):
-    df[TEXT_COL] = df[TEXT_COL].astype("string").str.strip()
-    df[TEXT_COL] = df[TEXT_COL].replace(["", "NA", "NaN", "nan", "None", "<NA>"], np.nan)
-    df = df.dropna(subset=[TEXT_COL]).reset_index(drop=True)
-    return df
-
 def load_and_prepare(csv_path: str) -> pd.DataFrame:
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
 
     # 텍스트 정리
-    df = drop_text(df)
-
-    # 문자열 라벨 -> 숫자 라벨
-    df["label"] = np.select(
-        [
-            df[LABEL_COL] == "없음",
-            df[LABEL_COL] == "약함",
-            df[LABEL_COL] == "강함",
-        ],
-        [0, 1, 2],
-        default=-1
-    )
-
-    # 라벨 변환 실패(-1) 제거
-    df = df[df["label"] != -1].reset_index(drop=True)
-
+    df[TEXT_COL] = df[TEXT_COL].astype("string").str.strip()
+    df[TEXT_COL] = df[TEXT_COL].replace(["", "NA", "NaN", "nan", "None", "<NA>"], np.nan)
+    df = df.dropna(subset=[TEXT_COL]).reset_index(drop=True)
     return df
 
 
@@ -79,7 +60,7 @@ def load_and_prepare(csv_path: str) -> pd.DataFrame:
 class TrainTextDataset(Dataset):
     def __init__(self, df: pd.DataFrame, tokenizer, max_len: int):
         self.texts = df[TEXT_COL].tolist()
-        self.labels = df["label"].astype(int).tolist()
+        self.labels = df["churn_intent_label"].astype(int).tolist()
         self.confidences = df['churn_intent_confidence'].astype(float).tolist()
         self.tokenizer = tokenizer
         self.max_len = max_len
@@ -234,17 +215,16 @@ def main():
     set_seed(SEED)
 
     # 1) csv 로드
-    new_df = pd.read_csv(CSV_PATH, encoding='utf-8-sig')
-    new_df = drop_text(new_df)
+    new_df = load_and_prepare(CSV_PATH)
     df = load_and_prepare(TRAIN_CSV_PATH)
 
     print("모델 :", MODEL_ID)
     print("전체 데이터 수 :", len(new_df))
     print("학습 데이터 수 :", len(df))
-    print("이탈의도 클래스별 학습 데이터 수 :", df['label'].value_counts())
+    print("이탈의도 클래스별 학습 데이터 수 :", df['churn_intent_label'].value_counts())
 
     # 2) train/val 분할
-    train_df, val_df = train_test_split(df, test_size=0.2, random_state=SEED, shuffle=True, stratify=df["label"])
+    train_df, val_df = train_test_split(df, test_size=0.2, random_state=SEED, shuffle=True, stratify=df["churn_intent_label"])
 
     # 3) tokenizer/model 생성
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, use_fast=True) # use_fast=True: Rust 기반 fast tokenizer 사용, 옛날모델은 미지원.

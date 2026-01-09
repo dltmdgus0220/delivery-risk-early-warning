@@ -141,7 +141,10 @@ def main():
         except Exception as e:
             print(f"Critical Error at batch {i}: {e}")
     end = time.time()
-    print(f"라벨링완료 - {int(end-start)}초 소요")
+    seconds = int(end-start)
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    print(f"라벨링완료 - {hours:02d}시간 {minutes:02d}분 {seconds:02d}초 소요")
 
     # 데이터 저장
     df_sample["churn_intent"] = out_churn_intent

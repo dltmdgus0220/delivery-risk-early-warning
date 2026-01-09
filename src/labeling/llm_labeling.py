@@ -29,6 +29,7 @@ def build_batch_prompt(texts: List[str], ratings: List[int]) -> str:
 - 복합 감정 처리: 불만 강도에 따라 '약함' 또는 '강함'로 분류하라.
 - 반드시 제공된 ID_1부터 ID_{len(texts)}까지 순서대로 누락 없이 라벨링하라.
 - 결과는 반드시 마크다운 없이 JSON 리스트 형식으로만 출력하라.
+- "keywords"는 [대상+상태] 형태의 짧은 단어로 추출하라. (예: "배달-지연", "위생-불량", "맛-변함")
 
 ### [입력 데이터]
 {combined_inputs}

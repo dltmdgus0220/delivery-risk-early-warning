@@ -124,7 +124,7 @@ def main():
                         break
                 except Exception as e:
                     print(f"Attempt {attempt+1} failed: {e}")
-                    time.sleep(20)
+                    time.sleep(10)
             
             if not success:
                 print(f"배치 {i} 최종 실패. 더미 데이터 삽입.")
@@ -135,8 +135,8 @@ def main():
                 out_keywords.extend([[]] * len(batch_texts))
 
             # 무료 버전일 경우 RPM 5를 넘기면 에러가 발생하므로 지연시간 필요
-            print("20초 대기")
-            time.sleep(20)
+            print("3초 대기")
+            time.sleep(3)
 
         except Exception as e:
             print(f"Critical Error at batch {i}: {e}")

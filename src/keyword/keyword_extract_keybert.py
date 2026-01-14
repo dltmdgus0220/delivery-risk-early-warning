@@ -12,6 +12,7 @@ kiwi = Kiwi()
 
 custom_stopwords = []
 
+
 # --- 2. 전처리 ---
 
 def extract_meaningful_words(text):
@@ -71,3 +72,13 @@ def get_refined_keywords_safe(df, label_filter="강함", top_n=10, diversity=0.7
     
     return keywords
 
+
+# --- 4. 결과 ---
+df = pd.read_csv("data/out.csv") 
+
+# '이탈 의도 강함(2)' 핵심 키워드 10개 뽑기
+best_keywords = get_refined_keywords_safe(df, label_filter="강함", top_n=10, diversity=0.7, sample_size=5000)
+
+print("\n=== 이탈 의도 강함 그룹의 핵심 키워드 ===")
+for word, score in best_keywords:
+    print(f"- {word} (유사도 점수: {score:.4f})")

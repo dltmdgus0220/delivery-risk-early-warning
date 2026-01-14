@@ -12,3 +12,18 @@ kiwi = Kiwi()
 
 custom_stopwords = []
 
+# --- 2. 전처리 ---
+
+def extract_meaningful_words(text):
+    if not isinstance(text, str):
+        return ""
+    
+    # 분석에 방해되는 요소 제거 및 토큰화 
+    result = kiwi.tokenize(text)
+    
+    # NNG(일반명사), NNP(고유명사), XR(어근), VA(형용사) 위주 추출
+    # 너무 짧은 단어(1글자)는 제외하여 품질을 높입니다.
+    words = [t.form for t in result if t.tag in ['NNG', 'NNP', 'XR', 'VA'] and len(t.form) > 1]
+    
+    return " ".join(words)
+

@@ -162,3 +162,20 @@ async def main_async():
         batch_ratings = batch_slice[args.score_col].astype(int).tolist()
         tasks.append(process_batch(client, args.model, batch_texts, batch_ratings, i//args.batch + 1, semaphore))
 
+    # 모든 태스크 실행 및 결과 수집
+    results = await asyncio.gather(*tasks)
+    
+    # 컬럼 추가
+    out_churn_intent, out_churn_intent_label, out_churn_intent_confidence, out_reason = [], [], [], []
+    for batch in results:
+        for item in batch:
+            out_churn_intent.append(item['churn_intent'])
+            out_churn_intent_label.append(item['churn_intent_label'])
+            out_churn_intent_confidence.append(item['churn_intent_confidence'])
+            out_reason.append(item['churn_intent_reason'])
+
+    df['churn_intent'] = out_churn_intent
+    df['churn_intent_label'] = out_churn_intent_label
+    df['churn_intent_confidence'] = out_churn_intent_confidence
+    df['churn_intent_reason'] = out_reason
+

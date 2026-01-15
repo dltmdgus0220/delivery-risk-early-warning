@@ -112,14 +112,14 @@ def main():
     p.add_argument("--out", required=True, help="저장 CSV 경로")
     p.add_argument("--n", type=int, default=1000, help="라벨링할 샘플 수")
     p.add_argument("--batch", type=int, default=100, help="한 번에 처리할 샘플 수")
-    p.add_argument("--seed", type=int, default=42, help="샘플링 시드")
     p.add_argument("--model", default="gemini-2.5-flash", help="Gemini 모델명") # gemini-1.5-flash
 
     args = p.parse_args()
     
     df = pd.read_csv(args.csv)
     df = df.dropna(subset=args.text_col).copy()
-    df_sample = df.sample(n=min(args.n, len(df)), random_state=args.seed).reset_index(drop=True)
+    df = df.head(min(args.n, len(df))).reset_index(drop=True)
+    # df_sample = df.sample(n=min(args.n, len(df)), random_state=42).reset_index(drop=True)
 
     client = genai.Client() # $env:GEMINI_API_KEY='AIzaSy어쩌구'
 
@@ -127,12 +127,12 @@ def main():
     batch_size = args.batch # 200까지는 안정적
     
     start = time.time()
-    for i in range(0, len(df_sample), batch_size):
-        batch_slice = df_sample.iloc[i : i + batch_size]
+    for i in range(0, len(df), batch_size):
+        batch_slice = df.iloc[i : i + batch_size]
         batch_texts = batch_slice[args.text_col].astype(str).tolist()
 
         prompt = build_batch_prompt(batch_texts)
-        print(f"[{i+1}/{len(df_sample)}] 배치 준비")
+        print(f"[{i+1}/{len(df)}] 배치 준비")
         
         success = False
         try:
@@ -168,11 +168,11 @@ def main():
     print(f"소요 시간: {hours:02d}:{minutes:02d}:{seconds:02d}")
 
     # 데이터 저장
-    df_sample["keywords"] = out_keywords
+    df["keywords"] = out_keywords
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True) # 부모디렉토리
-    df_sample.to_csv(args.out, index=False, encoding="utf-8-sig")
-    print(f"저장완료: {args.out} ({len(df_sample)}개)")
+    df.to_csv(args.out, index=False, encoding="utf-8-sig")
+    print(f"저장완료: {args.out} ({len(df)}개)")
 
 if __name__ == "__main__":
     main()

@@ -12,7 +12,7 @@ from google import genai  # pip install -U google-genai
 # --- 1. 사전 정의 ---
 
 ASPECT = ["배달", "배달원", "배차", "배달지역", "배달수수료", "최소주문금액", "배달예상시간",
-          "고객센터", "보상", "응대",
+          "고객센터", "보상", "대응",
           "쿠폰", "혜택", "이벤트", "멤버십", "광고", "구독료",
           "결제", "주문", "리뷰", "음식상태", "위생",
           "로그인", "본인인증", "정책", "기업",
@@ -145,7 +145,7 @@ def main():
                     
                     if isinstance(data, list) and len(data) == len(batch_texts): # 리스트가 맞는지, 보낸 텍스트 개수 == 받은 결과 개수
                         for item in data:
-                            out_keywords.append(item.get("keywords"))
+                            out_keywords.append(item.get("keywords", []))
                         success = True
                         break
                 except Exception as e:

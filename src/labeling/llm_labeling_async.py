@@ -125,3 +125,19 @@ async def process_batch(client, model, batch_texts, batch_ratings, batch_index, 
         print(f"배치 {batch_index} 최종 실패")
         return [{"churn_intent": "Error", "churn_intent_label": -1, "churn_intent_confidence": 0.0, "churn_intent_reason": "Error"} for _ in batch_texts]
 
+
+# --- 4. main ---
+
+async def main_async():
+    p = argparse.ArgumentParser(description="비동기 LLM 이탈의도 라벨링")
+    p.add_argument("--csv", required=True, help="입력 CSV 경로")
+    p.add_argument("--text-col", default="content", help="텍스트 컬럼명")
+    p.add_argument("--score-col", default="score", help="별점 컬럼명")
+    p.add_argument("--out", required=True, help="저장 CSV 경로")
+    p.add_argument("--n", type=int, default=200, help="라벨링할 샘플 수")
+    p.add_argument("--batch", type=int, default=50, help="한 번에 처리할 샘플 수")
+    p.add_argument("--parallel", type=int, default=10, help="동시 실행 배치 수") 
+    p.add_argument("--model", default="gemini-2.0-flash", help="Gemini 모델명") # gemini-2.5-flash
+
+    args = p.parse_args()
+    

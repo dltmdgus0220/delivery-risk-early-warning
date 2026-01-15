@@ -13,7 +13,7 @@ from google import genai
 # --- 1. 사전 정의 ---
 
 ASPECT = ["배달", "배달원", "배차", "배달지역", "배달수수료", "최소주문금액", "배달예상시간",
-          "고객센터", "보상", "응대",
+          "고객센터", "보상", "대응",
           "쿠폰", "혜택", "이벤트", "멤버십", "광고", "구독료",
           "결제", "주문", "리뷰", "음식상태", "위생",
           "로그인", "본인인증", "정책", "기업",
@@ -122,7 +122,7 @@ async def process_batch(client, model, batch_texts, batch_index, semaphore) -> L
                 data = extract_json(resp.text)
                 if isinstance(data, list) and len(data) == len(batch_texts):
                     print(f"배치 {batch_index} 완료")
-                    return [item.get("keywords") for item in data]
+                    return [item.get("keywords", []) for item in data]
                 
             except Exception as e:
                 print(f"배치 {batch_index} 시도 {attempt+1} 실패: {e}")

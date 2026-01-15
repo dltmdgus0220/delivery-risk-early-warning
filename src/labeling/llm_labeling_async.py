@@ -179,3 +179,14 @@ async def main_async():
     df['churn_intent_confidence'] = out_churn_intent_confidence
     df['churn_intent_reason'] = out_reason
 
+    # 저장
+    os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True) # 부모디렉토리
+    df.to_csv(args.out, index=False, encoding="utf-8-sig")
+
+    end_time = time.time()
+    print(f"소요 시간: {time.strftime('%H:%M:%S', time.gmtime(end_time - start_time))}")
+    print(f"저장 완료: {args.out}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main_async())

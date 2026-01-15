@@ -149,31 +149,32 @@ async def main_async():
     # 데이터 로드
     df = pd.read_csv(args.csv)
     df = df.dropna(subset=[args.text_col]).copy()
-    df_sample = df.sample(n=min(args.n, len(df)), random_state=42).reset_index(drop=True)
+    df = df.head(min(args.n, len(df))).reset_index(drop=True)
+    # df_sample = df.sample(n=min(args.n, len(df)), random_state=42).reset_index(drop=True)
 
     client = genai.Client()
     semaphore = asyncio.Semaphore(args.parallel)
     
     tasks = []
-    print(f"총 {len(df_sample)}개 데이터를 {args.batch}개씩 비동기 처리 시작")
+    print(f"총 {len(df)}개 데이터를 {args.batch}개씩 비동기 처리 시작")
     
     start_time = time.time()
 
     # 배치 단위 태스크 생성
-    for i in range(0, len(df_sample), args.batch):
-        batch_texts = df_sample.iloc[i : i + args.batch][args.text_col].astype(str).tolist()
+    for i in range(0, len(df), args.batch):
+        batch_texts = df.iloc[i : i + args.batch][args.text_col].astype(str).tolist()
         tasks.append(process_batch(client, args.model, batch_texts, i//args.batch + 1, semaphore))
 
     # 모든 태스크 실행 및 결과 수집
     results = await asyncio.gather(*tasks)
     
     # 2차원 리스트 평탄화
-    flat_results = [item for sublist in results for item in sublist]
-    df_sample["keywords"] = flat_results
+    flat_results = [item for batch in results for item in batch]
+    df["keywords"] = flat_results
 
     # 저장
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True) # 부모디렉토리
-    df_sample.to_csv(args.out, index=False, encoding="utf-8-sig")
+    df.to_csv(args.out, index=False, encoding="utf-8-sig")
     
     end_time = time.time()
     print(f"소요 시간: {time.strftime('%H:%M:%S', time.gmtime(end_time - start_time))}")

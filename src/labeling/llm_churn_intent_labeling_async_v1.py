@@ -106,8 +106,7 @@ async def process_batch(client, model, batch_texts, batch_ratings, batch_index, 
                         out.append(
                             {
                                 "churn_intent": item.get("churn_intent", ""),
-                                "churn_intent_label": item.get("churn_intent_label", -1),
-                                "churn_intent_reason": item.get("churn_intent_reason", ""),
+                                "churn_intent_label": item.get("churn_intent_label", -1)
                             }
                         )
                     return out
@@ -117,7 +116,7 @@ async def process_batch(client, model, batch_texts, batch_ratings, batch_index, 
                 await asyncio.sleep(2**attempt) # 지수 백오프
         
         print(f"배치 {batch_index} 최종 실패")
-        return [{"churn_intent": "Error", "churn_intent_label": -1, "churn_intent_reason": "Error"} for _ in batch_texts]
+        return [{"churn_intent": "Error", "churn_intent_label": -1} for _ in batch_texts]
 
 
 # --- 4. main ---
@@ -160,16 +159,14 @@ async def main_async():
     results = await asyncio.gather(*tasks)
     
     # 컬럼 추가
-    out_churn_intent, out_churn_intent_label, out_reason = [], [], []
+    out_churn_intent, out_churn_intent_label = [], []
     for batch in results:
         for item in batch:
             out_churn_intent.append(item['churn_intent'])
             out_churn_intent_label.append(item['churn_intent_label'])
-            out_reason.append(item['churn_intent_reason'])
 
     df['churn_intent'] = out_churn_intent
     df['churn_intent_label'] = out_churn_intent_label
-    df['churn_intent_reason'] = out_reason
 
     # 저장
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True) # 부모디렉토리

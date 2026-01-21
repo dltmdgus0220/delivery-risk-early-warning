@@ -50,4 +50,6 @@ print("1과 5 비교:", mask4.sum())
 print("\n[classification_report]")
 print(classification_report(df['label'], df1['churn_intent_label']))
 
-# df1[mask1][['content', 'churn_intent', 'churn_intent_reason']].to_csv('out_v4_comp2.csv', encoding='utf-8-sig', escapechar='\\')
+# df1['label'] = df['label']
+# df_copy = df1[mask3][['content', 'churn_intent_label', 'churn_intent_reason', 'label']].copy()
+# df_copy.to_csv('out_v2_comp4.csv', encoding='utf-8-sig', escapechar='\\')

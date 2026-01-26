@@ -13,7 +13,6 @@ from google import genai  # pip install -U google-genai
 # --- 1. 프롬프트 생성 ---
 
 def build_batch_prompt(texts: List[str]) -> str:
-    # LLM이 실수없이 잘 이해할 수 있도록 "ID_1: (별점 5점) 맛있어요" 형식으로 묶음.
     combined_inputs = "\n".join([
         f"ID_{i+1}: {t}" for i, t in enumerate(texts)
     ])

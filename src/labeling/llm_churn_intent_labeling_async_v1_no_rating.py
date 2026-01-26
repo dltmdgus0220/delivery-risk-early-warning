@@ -85,7 +85,7 @@ async def process_batch(client, model, batch_texts, batch_index, semaphore) -> L
                     client.models.generate_content,
                     model=model,
                     contents=prompt,
-                    config={"temperature": 0.1},
+                    config={"temperature": 0.0},
                 )
                 
                 data = extract_json(resp.text)

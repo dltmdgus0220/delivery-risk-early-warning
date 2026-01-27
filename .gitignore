@@ -208,6 +208,6 @@ __marimo__/
 
 
 *.csv
-test.*
+*test*
 *.html
 *old.py

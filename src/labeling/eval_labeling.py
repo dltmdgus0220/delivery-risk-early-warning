@@ -6,6 +6,7 @@ from sklearn.metrics import classification_report
 # --- 0. 설정 ---
 p = argparse.ArgumentParser(description="LLM 프롬프트 평가")
 p.add_argument("--dir", required=True, help="폴더 경로")
+p.add_argument("--save", action="store_true", help="틀린 데이터 저장 여부") # cli 입력 시 --save를 포함하면 true
 
 args = p.parse_args()
     
@@ -33,16 +34,18 @@ print(df5['churn_intent_label'].value_counts())
 
 # --- 2. 일관성 검증 ---
 
-mask1 = (df1['churn_intent'] != df2['churn_intent'])
-mask2 = (df1['churn_intent'] != df3['churn_intent'])
-mask3 = (df1['churn_intent'] != df4['churn_intent'])
-mask4 = (df1['churn_intent'] != df5['churn_intent'])
+mask1 = (df1['churn_intent_label'] != df['label'])
+mask2 = (df1['churn_intent'] != df2['churn_intent'])
+mask3 = (df1['churn_intent'] != df3['churn_intent'])
+mask4 = (df1['churn_intent'] != df4['churn_intent'])
+mask5 = (df1['churn_intent'] != df5['churn_intent'])
 
 print()
-print("1과 2 비교:", mask1.sum())
-print("1과 3 비교:", mask2.sum())
-print("1과 4 비교:", mask3.sum())
-print("1과 5 비교:", mask4.sum())
+print("1과 정답 비교", mask1.sum())
+print("1과 2 비교:", mask2.sum())
+print("1과 3 비교:", mask3.sum())
+print("1과 4 비교:", mask4.sum())
+print("1과 5 비교:", mask5.sum())
 
 
 # --- 3. 하드라벨과 비교 ---
@@ -50,6 +53,7 @@ print("1과 5 비교:", mask4.sum())
 print("\n[classification_report]")
 print(classification_report(df['label'], df1['churn_intent_label']))
 
-# df1['label'] = df['label']
-# df_copy = df1[mask3][['content', 'churn_intent_label', 'churn_intent_reason', 'label']].copy()
-# df_copy.to_csv('out_v2_comp4.csv', encoding='utf-8-sig', escapechar='\\')
+if args.save:
+    df1['label'] = df['label']
+    df_copy = df1[mask1][['content', 'score', 'churn_intent_label', 'churn_intent_reason', 'label']].copy()
+    df_copy.to_csv(f'out_{args.dir}_comp.csv', encoding='utf-8-sig', escapechar='\\')

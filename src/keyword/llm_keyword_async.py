@@ -148,7 +148,6 @@ async def main_async():
     
     # 데이터 로드
     df = pd.read_csv(args.csv)
-    df = df.dropna(subset=[args.text_col]).copy()
     df = df.head(min(args.n, len(df))).reset_index(drop=True)
     # df_sample = df.sample(n=min(args.n, len(df)), random_state=42).reset_index(drop=True)
 

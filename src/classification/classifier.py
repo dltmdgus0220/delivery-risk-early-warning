@@ -133,13 +133,13 @@ def train_pipeline(args):
     print(classification_report(y_true, y_pred, target_names=["없음", "불만", "확정"]))
 
 # inference
-def infer_pipeline(args):
-    df = pd.read_csv(args.input, encoding="utf-8-sig")
+def infer_pipeline(input, save, text_col, batch):
+    df = pd.read_csv(input, encoding="utf-8-sig")
 
-    tokenizer = AutoTokenizer.from_pretrained(args.save, use_fast=True)
-    model = AutoModelForSequenceClassification.from_pretrained(args.save).to(DEVICE)
+    tokenizer = AutoTokenizer.from_pretrained(save, use_fast=True)
+    model = AutoModelForSequenceClassification.from_pretrained(save).to(DEVICE)
 
-    loader = DataLoader(InferTextDataset(df, tokenizer, args.text_col, MAX_LEN), batch_size=args.batch, shuffle=False)
+    loader = DataLoader(InferTextDataset(df, tokenizer, text_col, MAX_LEN), batch_size=batch, shuffle=False)
     preds = predict_texts(model, loader, DEVICE)
     df['churn_intent'] = [id2label[p] for p in preds]
     df['churn_intent_label'] = preds
@@ -154,7 +154,7 @@ def main():
     if args.mode == "train":
         train_pipeline(args)
     else:
-        infer_pipeline(args)
+        infer_pipeline(args.input, args.save, args.text_col, args.batch)
 
 
 if __name__ == "__main__":

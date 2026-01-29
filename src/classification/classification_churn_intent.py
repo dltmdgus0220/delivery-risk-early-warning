@@ -146,3 +146,16 @@ def infer_pipeline(args):
 
     df.to_csv('out.csv', encoding='utf-8-sig', escapechar='\\')
 
+
+def main():
+    os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+    args = build_argparser().parse_args()
+
+    if args.mode == "train":
+        train_pipeline(args)
+    else:
+        infer_pipeline(args)
+
+
+if __name__ == "__main__":
+    main()

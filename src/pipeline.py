@@ -26,3 +26,22 @@ async def run_pipeline(conn, collect_mode: str="date", collect_num: int=1000, st
 
     return df
 
+
+async def main():
+    p = argparse.ArgumentParser(description="수집-분류-키워드도출-저장 파이프라인 테스트")
+    p.add_argument("--out", required=True, help="결과 CSV 저장 경로")
+    p.add_argument("--mode", required=True, choices=["num", "date"], help="수집기준 개수/기간(num/date)")
+    p.add_argument("--num", type=int, default=1000, help="수집개수")
+    p.add_argument("--start-date", type=str, default="2026-01-01", help="수집시작일")
+    p.add_argument("--end-date", type=str, default=None, help="수집종료일")
+
+    args = p.parse_args()
+    if args.mode == "num":
+        df_test = await run_pipeline(None, collect_mode=args.mode, collect_num=args.num)
+    elif args.mode == "date":
+        df_test = await run_pipeline(None, collect_mode=args.mode, start_date=args.start_date, end_date=args.end_date)
+    df_test.to_csv(args.out, encoding="utf-8-sig", index=False)
+    print(f"{len(df_test)}개 저장완료: {args.out}")
+
+if __name__ == "__main__":
+    asyncio.run(main())

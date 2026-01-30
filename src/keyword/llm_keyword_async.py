@@ -110,10 +110,8 @@ async def process_batch(client, model, batch_texts, batch_index, semaphore) -> L
         
         for attempt in range(3): # 재시도 로직
             try:
-                # 비동기 API 호출
-                # 코루틴: 작업단위, 이벤트루프: 스케줄러, asyncio.to_thread: 오래걸리는 동기호출을 스레드로 분리하여 이벤트루프가 막히지 않고 나머지 코루틴 작업들이 계속 진행되게 함
-                resp = await asyncio.to_thread(
-                    client.models.generate_content,
+                # aio 클라이언트면 to_thread 없이 바로 await
+                resp = await client.models.generate_content(
                     model=model,
                     contents=prompt,
                     config={"temperature": 0.1},
@@ -132,14 +130,33 @@ async def process_batch(client, model, batch_texts, batch_index, semaphore) -> L
         return [[] for _ in batch_texts]
 
 
-# --- 5. main ---
+# --- 5. 키워드 도출 ---
+
+async def extract_keywords(df, text_col, batch, model:str="gemini-2.0-flash", parallel:int=10):
+    semaphore = asyncio.Semaphore(parallel)
+
+    async with genai.Client().aio as client:
+        tasks = []
+        # 배치 단위 태스크 생성
+        for i in range(0, len(df), batch):
+            batch_texts = df.iloc[i : i + batch][text_col].astype(str).tolist()
+            tasks.append(process_batch(client, model, batch_texts, i//batch + 1, semaphore))
+
+        # 모든 태스크 실행 및 결과 수집
+        results = await asyncio.gather(*tasks)
+    
+    # 2차원 리스트 평탄화
+    flat_results = [item for batch in results for item in batch]
+    df["keywords"] = flat_results
+
+
+# --- 6. main ---
 
 async def main_async():
     p = argparse.ArgumentParser(description="비동기 LLM 키워드도출")
     p.add_argument("--csv", required=True)
     p.add_argument("--text-col", default="content")
     p.add_argument("--out", required=True)
-    p.add_argument("--n", type=int, default=1000)
     p.add_argument("--batch", type=int, default=100)
     p.add_argument("--parallel", type=int, default=10) # 동시 실행 배치 수
     p.add_argument("--model", default="gemini-2.0-flash")
@@ -148,35 +165,17 @@ async def main_async():
     
     # 데이터 로드
     df = pd.read_csv(args.csv)
-    df = df.head(min(args.n, len(df))).reset_index(drop=True)
-    # df_sample = df.sample(n=min(args.n, len(df)), random_state=42).reset_index(drop=True)
-
-    client = genai.Client()
-    semaphore = asyncio.Semaphore(args.parallel)
-    
-    tasks = []
     print(f"총 {len(df)}개 데이터를 {args.batch}개씩 비동기 처리 시작")
     
+    # 키워드 도출
     start_time = time.time()
-
-    # 배치 단위 태스크 생성
-    for i in range(0, len(df), args.batch):
-        batch_texts = df.iloc[i : i + args.batch][args.text_col].astype(str).tolist()
-        tasks.append(process_batch(client, args.model, batch_texts, i//args.batch + 1, semaphore))
-
-    # 모든 태스크 실행 및 결과 수집
-    results = await asyncio.gather(*tasks)
-    
-    # 2차원 리스트 평탄화
-    flat_results = [item for batch in results for item in batch]
-    df["keywords"] = flat_results
+    await extract_keywords(df, args.text_col, args.batch, args.model, args.parallel)
+    end_time = time.time()
+    print(f"소요 시간: {time.strftime('%H:%M:%S', time.gmtime(end_time - start_time))}")
 
     # 저장
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True) # 부모디렉토리
     df.to_csv(args.out, index=False, encoding="utf-8-sig")
-    
-    end_time = time.time()
-    print(f"소요 시간: {time.strftime('%H:%M:%S', time.gmtime(end_time - start_time))}")
     print(f"저장 완료: {args.out}")
 
 if __name__ == "__main__":

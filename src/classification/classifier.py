@@ -8,10 +8,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, BertTokenizerFast
 
-from configs import MODEL_ID, MAX_LEN, DEVICE, EPS, id2label
-from utils import set_seed, balanced_class_extract
-from datasets import TrainTextDataset, InferTextDataset
-from trainer import train_one_epoch, eval_model, predict_texts
+from src.classification.configs import MODEL_ID, MAX_LEN, DEVICE, EPS, id2label
+from src.classification.utils import set_seed, balanced_class_extract
+from src.classification.datasets import TrainTextDataset, InferTextDataset
+from src.classification.trainer import train_one_epoch, eval_model, predict_texts
 
 
 # argparse

@@ -119,6 +119,7 @@ async def process_batch(client, model, batch_texts, batch_index, semaphore) -> L
                 
                 data = extract_json(resp.text)
                 if isinstance(data, list) and len(data) == len(batch_texts):
+                    # data = sorted(data, key=lambda x: x.get("id", 10**9)) # 모델이 순서를 섞어주는 경우를 방지하기 위한 안전장치
                     print(f"배치 {batch_index} 완료")
                     return [item.get("keywords", []) for item in data]
                 
@@ -139,7 +140,12 @@ async def extract_keywords(df, text_col, batch, model:str="gemini-2.0-flash", pa
         tasks = []
         # 배치 단위 태스크 생성
         for i in range(0, len(df), batch):
-            batch_texts = df.iloc[i : i + batch][text_col].astype(str).tolist()
+            batch_texts = (
+                df.iloc[i:i+batch][text_col]
+                  .fillna("")
+                  .astype(str)
+                  .tolist()
+            )
             tasks.append(process_batch(client, model, batch_texts, i//batch + 1, semaphore))
 
         # 모든 태스크 실행 및 결과 수집
@@ -148,6 +154,8 @@ async def extract_keywords(df, text_col, batch, model:str="gemini-2.0-flash", pa
     # 2차원 리스트 평탄화
     flat_results = [item for batch in results for item in batch]
     df["keywords"] = flat_results
+
+    return df
 
 
 # --- 6. main ---
@@ -169,7 +177,7 @@ async def main_async():
     
     # 키워드 도출
     start_time = time.time()
-    await extract_keywords(df, args.text_col, args.batch, args.model, args.parallel)
+    df = await extract_keywords(df, args.text_col, args.batch, args.model, args.parallel)
     end_time = time.time()
     print(f"소요 시간: {time.strftime('%H:%M:%S', time.gmtime(end_time - start_time))}")
 

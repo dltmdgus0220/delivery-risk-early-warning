@@ -1,4 +1,4 @@
-# 🛵 배달앱 리뷰 분석을 통한 이탈 리스크 조기 경보 시스템
+# 🛵 배달앱 리뷰 분석을 통한 이탈 리스크 감지 시스템
 ## “배달의민족” 고객 이탈 방지를 위한 리뷰 분석 프로젝트
 
 ## 1. 프로젝트 개요
@@ -47,11 +47,26 @@
 .
 ├── .gitignore
 ├── README.md                  
-├── requirements.txt           # Python 의존성 목록
-├── data/                      # 원본 데이터 파일
+├── requirements.txt # Python 의존성 목록
+├── data/ # 원시/결과 데이터 저장 경로
+├── model_out/ # 학습된 모델 가중치 저장 경로
+├── data_collect.py # 데이터수집
 └── src/
-    ├── data_collection.py
-    └── data_merge.py
+    ├── classification/
+    |   ├── classifier.py # 이탈의도분류
+    |   ├── configs.py
+    |   ├── datasets.py
+    |   ├── trainer.py
+    |   └── utils.py    
+    ├── keyword/
+    |   ├── llm_keyword_async.py # 비동기식 키워드도출
+    |   ├── llm_keyword.py # 동기식 키워드도출
+    |   └── 기타파일들
+    └── labeling/
+        ├── llm_churn_intent_labeling_async.py # 비동기식 이탈의도라벨링
+        ├── llm_churn_intent_labeling.py # 동기식 이탈의도라벨링
+        └── prompt_dev/ # 프롬프트 개선을 위해 사용한 파일들
+
 
 ```
 

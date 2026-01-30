@@ -53,16 +53,16 @@
 ├── data_collect.py # 데이터수집
 └── src/
     ├── classification/
-        ├── classifier.py # 이탈의도분류
-        ├── configs.py
-        ├── datasets.py
-        ├── trainer.py
-        └── utils.py    
+    |   ├── classifier.py # 이탈의도분류
+    |   ├── configs.py
+    |   ├── datasets.py
+    |   ├── trainer.py
+    |   └── utils.py    
     ├── keyword/
-        ├── llm_keyword_async.py # 비동기식 키워드도출
-        ├── llm_keyword.py # 동기식 키워드도출
-        └── 기타파일들
-    ├── labeling/
+    |   ├── llm_keyword_async.py # 비동기식 키워드도출
+    |   ├── llm_keyword.py # 동기식 키워드도출
+    |   └── 기타파일들
+    └── labeling/
         ├── llm_churn_intent_labeling_async.py # 비동기식 이탈의도라벨링
         ├── llm_churn_intent_labeling.py # 동기식 이탈의도라벨링
         └── prompt_dev/ # 프롬프트 개선을 위해 사용한 파일들

@@ -24,3 +24,11 @@ def monthly_risk_calc(df, date_col: str='at'):
 
     return monthly_risk
 
+
+def main():
+    df = pd.read_csv('data/out/baemin_reviews_playstore_99997_label_keyword.csv', encoding='utf-8-sig')
+    monthly_risk = monthly_risk_calc(df)
+    monthly_risk.to_csv('monthly_risk.csv', encoding='utf-8-sig')
+
+if __name__ == "__main__":
+    main()

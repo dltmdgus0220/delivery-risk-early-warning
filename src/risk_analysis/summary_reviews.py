@@ -58,3 +58,24 @@ def build_batch_prompt(texts: List[str], keyword) -> str:
 
 """.strip()
 
+
+# --- 3. 리뷰 요약 함수 ---
+
+def llm_summary_reviews(keyword:str, lst: List[str], model:str="gemini-2.0-flash") -> str:
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("환경변수 GEMINI_API_KEY를 설정해 주세요. ($env:GEMINI_API_KEY=...)")
+
+    client = genai.Client(api_key=api_key)
+
+    # 리뷰 전체를 한 번에 입력
+    prompt = build_batch_prompt(lst, keyword)
+
+    resp = client.models.generate_content(
+        model=model,
+        contents=prompt,
+    )
+
+    resp = clean_one_line(getattr(resp, "text", ""))
+    return resp
+

@@ -79,3 +79,29 @@ def llm_summary_reviews(keyword:str, lst: List[str], model:str="gemini-2.0-flash
     resp = clean_one_line(getattr(resp, "text", ""))
     return resp
 
+
+# --- 4. 리뷰 전처리 ---
+
+def select_target_keyword_and_reviews(df:pd.DataFrame, target:str | None=None) -> Tuple[str, List[str]]:
+    # top 키워드 도출
+    def _top_keyword(d: pd.DataFrame, exclude: List[str]) -> Optional[str]:
+        kws = [k for ks in d["keywords"] for k in ks if k not in exclude]
+        if not kws:
+            return None
+        return Counter(kws).most_common(1)[0][0]
+
+    # 타겟 키워드 포함한 리뷰 도출
+    def _collect_reviews(d: pd.DataFrame, kw: str) -> List[str]:
+        if kw is None or d.empty:
+            return []
+        mask = d["keywords"].apply(lambda ks: kw in ks)
+        return d.loc[mask, "content"].dropna().astype(str).tolist()
+    
+    if target:
+        reviews = _collect_reviews(df, target)
+    else:
+        target = _top_keyword(df, EXCEPT_KEYWORD)
+        reviews = _collect_reviews(df, target)
+
+    return target, reviews
+

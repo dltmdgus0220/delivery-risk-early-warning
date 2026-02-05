@@ -19,7 +19,8 @@ def monthly_risk_calc(df, date_col: str='at'):
     monthly_risk = (
         df.groupby("month")
         .apply(risk_score_calc, include_groups=False)
-        .reset_index(name="risk_score")
+        .reset_index()
+        .rename(columns={0: "risk_score"})
     )
 
     return monthly_risk

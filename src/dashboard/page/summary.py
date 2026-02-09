@@ -325,3 +325,24 @@ def _as_id_list(x):
                 pass
     return [x]
 
+
+# summary
+def render_summary_section(title: str, summary_obj):
+    d = _as_dict(summary_obj)
+
+    situations = d.get("situations", "")
+    evaluations = d.get("evaluations", "")
+    solutions = d.get("solutions", "")
+
+    st.markdown(f"**[{title}]**")
+
+    # 보기 좋게 bullet + 본문 분리
+    st.markdown("- **문제 상황**")
+    st.write(situations if situations else "요약 내용이 없습니다.")
+
+    st.markdown("- **기존 대응에 대한 평가**")
+    st.write(evaluations if evaluations else "요약 내용이 없습니다.")
+
+    st.markdown("- **소비자들이 원하는 대응**")
+    st.write(solutions if solutions else "요약 내용이 없습니다.")
+

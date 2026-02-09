@@ -379,3 +379,50 @@ def render_sidebar(today: datetime):
         "month": int(selected_month.split("-")[1]),
     }
 
+
+def render(cfg: dict, today):
+    set_korean_font()
+    inject_css()
+    db_path = st.session_state.get("db_path")
+
+    # 기준 월
+    cur_dt = datetime.strptime(cfg["yyyymm"], "%Y-%m")
+    prev_dt = cur_dt - relativedelta(months=1)
+
+    cur_yyyymm = cur_dt.strftime("%Y-%m")
+    prev_yyyymm = prev_dt.strftime("%Y-%m")
+
+    # 데이터로드
+    df_cur = fetch_month_df(db_path, "data", cur_yyyymm)
+    df_cur["keywords"] = df_cur["keywords"].apply(parse_keywords)
+    df_prev = fetch_month_df(db_path, "data", prev_yyyymm)
+    df_prev["keywords"] = df_prev["keywords"].apply(parse_keywords)
+    df_cur_summary = fetch_month_df(db_path, "summary", cur_yyyymm)
+    df_prev_summary = fetch_month_df(db_path, "summary", prev_yyyymm)
+
+    # 데이터분리
+    df_cur_confirmed = df_cur[df_cur['churn_intent_label'] == 2].copy()
+    df_cur_complaint = df_cur[df_cur['churn_intent_label'] == 1].copy()
+    df_cur_positive = df_cur[df_cur['churn_intent_label'] == 0].copy()
+    df_prev_confirmed = df_prev[df_prev['churn_intent_label'] == 2].copy()
+    df_prev_complaint = df_prev[df_prev['churn_intent_label'] == 1].copy()
+    df_prev_positive = df_prev[df_prev['churn_intent_label'] == 0].copy()
+
+    # 클래스 비율 계산
+    ratio_cur_confirmed = round(len(df_cur_confirmed)/len(df_cur)*100, 1)
+    ratio_cur_complaint = round(len(df_cur_complaint)/len(df_cur)*100, 1)
+    ratio_cur_positive = round(len(df_cur_positive)/len(df_cur)*100, 1)
+    ratio_prev_confirmed = round(len(df_prev_confirmed)/len(df_prev)*100, 1)
+    ratio_prev_complaint = round(len(df_prev_complaint)/len(df_prev)*100, 1)
+    ratio_prev_positive = round(len(df_prev_positive)/len(df_prev)*100, 1)
+
+    st.caption(
+        f"※ 모든 증감 수치는 지난달({prev_dt.year % 100:02d}년 {prev_dt.month:02d}월) 대비 기준입니다."
+    )
+
+    year, month = cfg["year"], cfg["month"]
+
+    st.markdown("## 📊 분석 요약")
+    st.markdown(f"### {year % 100:02d}년 {month:02d}월 데이터 요약")
+
+    st.divider()

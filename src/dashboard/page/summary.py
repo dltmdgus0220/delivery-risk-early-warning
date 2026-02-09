@@ -472,3 +472,49 @@ def render(cfg: dict, today):
             delta_p = round(ratio_cur_positive - ratio_prev_positive, 1)
             class_mini_card("없음", len(df_cur_positive), ratio_cur_positive, delta_p, (delta_p > 0))
 
+
+    # -------- 키워드 분석 --------
+    with right:
+        st.markdown("#### 🔑 키워드 분석")
+
+        kw_left, kw_right = st.columns([1.5, 1])
+
+        with kw_left:
+            topn, select = render_top_keywords_bar_plotly(
+                df=df_cur_confirmed,
+                title="'확정' Top5 키워드",
+                top_n=5,
+            )
+
+        with kw_right:
+            if select is None:
+                st.markdown(
+                    f"""
+                    <h5 style="text-align:center; margin-top:0.5rem;">
+                        키워드를 선택하면 클래스별 비중을 표시합니다
+                    </h5>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                st.info("왼쪽 막대를 클릭하세요.", icon="👈")
+            else:
+                st.markdown(
+                    f"""
+                    <h5 style="text-align:center; margin-top:0.5rem;">
+                        '{select}' 클래스별 비중 비교
+                    </h5>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                
+                render_keyword_ratio_compare_bar(
+                    target=select,
+                    df_cur_confirmed=df_cur_confirmed,
+                    df_cur_complaint=df_cur_complaint,
+                    df_prev_confirmed=df_prev_confirmed,
+                    df_prev_complaint=df_prev_complaint,
+                    cur_label=cur_yyyymm, # 예: "2026-01"
+                    prev_label=prev_yyyymm, # 예: "2025-12"
+                )
+
+    st.divider()

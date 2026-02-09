@@ -173,3 +173,55 @@ def fetch_month_df(db_path: str, table: str, yyyymm: str) -> pd.DataFrame:
     conn.close()
     return df
 
+# TopN 키워드 막대그래프 시각화
+def render_top_keywords_bar_plotly(df, title: str, top_n=5):
+    counter = keyword_count(df)
+    top_keywords = top_n_keywords_extract(counter, n=top_n)
+
+    if not top_keywords:
+        st.info("표시할 키워드가 없습니다.")
+        return None
+
+    chart_df = pd.DataFrame(top_keywords, columns=["keyword", "count"]).sort_values("count")
+
+    fig = px.bar(
+        chart_df,
+        x="count",
+        y="keyword",
+        orientation="h",
+        title=title,
+    )
+
+    # 타이틀
+    fig.update_layout(
+    title=dict(
+        text=title,
+        x=0.5, # 중앙 정렬
+        xanchor="center",
+        font=dict(size=20, family="Arial", color="black"),
+    ),
+    margin=dict(l=10, r=10, t=50, b=10),
+    )
+
+    # 축 이름설정
+    fig.update_xaxes(title="빈도 수")
+    fig.update_yaxes(title=None)
+
+    # 막대 데이터 표시
+    fig.update_traces(
+        text=chart_df["count"],
+        textposition="outside",
+    )
+
+    fig.update_layout(clickmode="event+select")
+    selected = st.plotly_chart(
+        fig,
+        use_container_width=True,
+        key="top_keyword_bar",
+        on_select="rerun",
+    )
+
+    if selected['selection']['points'] != []:
+        return top_keywords, selected['selection']['points'][0]['y']  # 클릭한 키워드
+
+    return top_keywords, None

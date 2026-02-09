@@ -55,3 +55,13 @@ def _minmax_and_total(conn):
     mn, mx, total = cur.fetchone()
     cur.close()
     return mn, mx, int(total)
+
+def _fmt_yy_mm_dd(s: str) -> str:
+    dt = datetime.strptime(s, "%Y-%m-%d")
+    return dt.strftime("%y.%m.%d")
+
+def _fmt_k(n: int) -> str:
+    if n >= 1000:
+        return f"{n/1000:.1f}k"
+    return f"{n}"
+

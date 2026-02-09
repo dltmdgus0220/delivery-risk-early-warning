@@ -212,3 +212,20 @@ def render_sidebar(today):
         "db_path": db_path
     }
 
+
+def render(cfg: dict, today: datetime):
+    db_path = cfg["db_path"]
+    st.session_state["db_path"] = cfg["db_path"]
+
+    st.markdown("## <대시보드 이름> 아직 미정")
+
+    # 앱 실행하자마자 DB 보고 서브타이틀 자동 결정
+    try:
+        target_s, target_e, subtitle = _pick_target_month(db_path, today)
+        st.markdown(f"### {subtitle}")
+        conn = sqlite3.connect(db_path)
+        df = _fetch_month_df(conn, target_s, target_e)
+        conn.close()
+
+        if df.empty:
+            st.info("선택된 월에 데이터가 없습니다.")

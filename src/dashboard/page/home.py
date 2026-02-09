@@ -98,3 +98,17 @@ def _pick_target_month(db_path: str, today: datetime):
         conn.close()
     subtitle = target_s.strftime("%y년 %m월 데이터 현황")
     return target_s, target_e, subtitle
+
+def _fetch_month_df(conn, start_dt: datetime, end_dt: datetime) -> pd.DataFrame:
+    df = pd.read_sql_query(
+        f"""
+        SELECT {DATE_COL} as at, churn_intent_label, keywords
+        FROM {TABLE}
+        WHERE date({DATE_COL}) BETWEEN date(?) AND date(?)
+        """,
+        conn,
+        params=(start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d")),
+    )
+    df["at"] = pd.to_datetime(df["at"]).dt.date
+    return df
+

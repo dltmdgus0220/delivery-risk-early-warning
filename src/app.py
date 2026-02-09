@@ -1,7 +1,7 @@
 import os
 import sys
 import streamlit as st
-from datetime import date, datetime, timedelta
+from datetime import datetime, timezone
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
@@ -9,8 +9,12 @@ if PROJECT_ROOT not in sys.path:
 
 from src.dashboard.page import home, overview, summary, analysis, operation
 
+st.set_page_config(
+    page_title="Dashboard",
+    layout="wide",
+)
 
-TODAY = date.today()
+TODAY = datetime.now(timezone.utc)
 PAGES = {
     "Home": home,
     "Overview": overview,
@@ -37,7 +41,7 @@ def main():
 
     # 본문 렌더
     if hasattr(page, "render"):
-        page.render(cfg)
+        page.render(cfg, TODAY)
     else:
         st.error("페이지에 render(cfg) 함수가 필요합니다.")
 

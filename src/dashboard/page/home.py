@@ -291,3 +291,36 @@ def render(cfg: dict, today: datetime):
         st.caption(f"메인 차트 로딩 실패: {e}")
         return  # df 없는데 아래 쓰면 터지니까 안전 종료
 
+    # 클래스별 키워드 TopN
+    st.divider()
+    st.subheader("클래스별 키워드 TopN")
+
+    top_n = st.slider("Top N", 5, 30, 10, 1)
+
+    if "keywords" not in df.columns:
+        st.info("DB에 keywords 컬럼이 없어 키워드 TopN을 그릴 수 없습니다.")
+        return
+    
+    kw_df = _topn_keywords_by_class(df, top_n=top_n)
+
+    buckets = ["확정", "불만", "없음"]
+    cols = st.columns(3, gap="large")
+
+    for i, label in enumerate(buckets):
+        with cols[i]:
+            st.markdown(f"#### '{label}' 키워드 Top{top_n}")
+            sub = kw_df[kw_df["class_name"] == label].copy()
+
+            if sub.empty:
+                st.caption("데이터가 없습니다.")
+            else:
+                bar = (
+                    alt.Chart(sub)
+                    .mark_bar()
+                    .encode(
+                        y=alt.Y("keyword:N", sort="-x", axis=alt.Axis(title=None)),
+                        x=alt.X("cnt:Q", axis=alt.Axis(title="빈도")),
+                        tooltip=["keyword:N", "cnt:Q"],
+                    )
+                )
+                st.altair_chart(bar, use_container_width=True)

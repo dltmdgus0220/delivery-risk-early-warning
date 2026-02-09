@@ -229,3 +229,35 @@ def render(cfg: dict, today: datetime):
 
         if df.empty:
             st.info("선택된 월에 데이터가 없습니다.")
+        else:
+            # 2개 차트: 좌(파이) / 우(라인)
+            c1, c2 = st.columns([1, 2], gap="large")
+
+            # 클래스별 분포 파이차트
+            with c1:
+                st.subheader("클래스별 분포")
+                dist = (
+                    df["churn_intent_label"]
+                    .fillna(-1)
+                    .astype(int)
+                    .map(_label_name)
+                    .value_counts()
+                    .rename_axis("class")
+                    .reset_index(name="cnt")
+                )
+
+                dist["pct"] = dist["cnt"] / dist["cnt"].sum()
+
+                base = alt.Chart(dist).encode(
+                    theta=alt.Theta("cnt:Q", stack=True),
+                    color=alt.Color("class:N", legend=alt.Legend(title="클래스")),
+                )
+
+                pie = base.mark_arc(outerRadius=140)
+
+                text = base.mark_text(radius=160, size=14).encode(
+                    text=alt.Text("pct:Q", format=".1%"),
+                    detail="class:N",
+                )
+
+                st.altair_chart(pie + text, use_container_width=True)

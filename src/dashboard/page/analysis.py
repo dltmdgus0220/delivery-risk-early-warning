@@ -288,3 +288,44 @@ def render_top_keywords_bar_plotly(df, title: str, top_n=5):
 
     return top_keywords, None
 
+# 키워드 추이 시각화
+# month 리스트 생성
+def build_11mo_window(center_yyyymm: str, min_yyyymm: str | None = None, max_yyyymm: str | None = None):
+    """
+    center_yyyymm을 중앙으로 11개월 리스트 생성.
+    - 과거가 부족하면 미래로 보충
+    - 미래가 부족하면 과거로 보충
+    min_yyyymm/max_yyyymm은 "YYYY-MM" 형식(데이터 존재 가능한 범위)
+    """
+    center_dt = datetime.strptime(center_yyyymm, "%Y-%m")
+
+    start_dt = center_dt - relativedelta(months=5)
+    end_dt = center_dt + relativedelta(months=5)
+
+    min_dt = datetime.strptime(min_yyyymm, "%Y-%m") if min_yyyymm else None
+    max_dt = datetime.strptime(max_yyyymm, "%Y-%m") if max_yyyymm else None
+
+    # 1) 과거 경계 보정: start가 min보다 앞이면 부족분만큼 end를 뒤로 밀기
+    if min_dt and start_dt < min_dt:
+        diff = (min_dt.year - start_dt.year) * 12 + (min_dt.month - start_dt.month)  # 부족 개월 수
+        start_dt = min_dt
+        end_dt = end_dt + relativedelta(months=diff)
+
+    # 2) 미래 경계 보정: end가 max보다 뒤면 부족분만큼 start를 앞으로 밀기
+    if max_dt and end_dt > max_dt:
+        diff = (end_dt.year - max_dt.year) * 12 + (end_dt.month - max_dt.month)  # 초과 개월 수
+        end_dt = max_dt
+        start_dt = start_dt - relativedelta(months=diff)
+
+        # 2-1) start를 앞으로 밀었더니 min보다 더 앞서면 다시 min으로 고정
+        if min_dt and start_dt < min_dt:
+            start_dt = min_dt
+
+    # 3) 최종 months 만들기 (start~end 범위에서 최대 11개)
+    months = []
+    cur = start_dt
+    while cur <= end_dt and len(months) < 11:
+        months.append(cur.strftime("%Y-%m"))
+        cur = cur + relativedelta(months=1)
+
+    return months

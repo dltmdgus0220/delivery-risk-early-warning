@@ -216,13 +216,26 @@ def render_sidebar(today):
         try:
             conn = sqlite3.connect(db_path)
             flag = asyncio.run(run_pipeline(conn, today))
+
+            # 파이프라인 후 min/max 다시 조회
+            mn_new, mx_new, _ = _minmax_and_total(conn)
             conn.close()
+
+            if mn_new and mx_new:
+                mn_new, mx_new = _to_date(mn_new), _to_date(mx_new)
+
+                # 기간 자동 갱신
+                st.session_state["start_dt"] = mn_new
+                st.session_state["end_dt"] = mx_new
+
             status.empty()
 
             if flag == 0:
                 st.sidebar.success("데이터 갱신 완료!")
             else:
                 st.sidebar.success("이미 최신 데이터입니다.")
+
+            st.rerun()
 
         except Exception as e:
             status.empty()

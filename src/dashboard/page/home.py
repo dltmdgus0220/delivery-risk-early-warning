@@ -142,8 +142,19 @@ def kpi_card(label: str, value: str, icon: str = "📌", sub: str | None = None)
         unsafe_allow_html=True
     )
 
+# 클래스별 비율 카드
+def class_card(class_name: str, count: int, ratio: float, bar_color: str = "#3B82F6", delta_pp: float | None = None):
+    st.markdown(
         f"""
+        <div class="card leftbar" style="--barcolor:{bar_color};">
+          <div class="class-title">{class_name}</div>
+          <div class="class-count">{count:,}건</div>
+          <div class="row">
+            <span class="badge">{ratio:.2f}%</span>
+          </div>
+        </div>
         """,
+        unsafe_allow_html=True
     )
 
     """

@@ -411,3 +411,62 @@ def render_keyword_trend_line(df_trend: pd.DataFrame, title: str, center_yyyymm:
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+# ---- 3행 ----
+# 신규+급증 렌더링
+def render_keyword_list_card(
+    title: str,
+    rows: list[dict],
+    top_k: int,
+    mode: str,  # "new" | "surge"
+):
+    """
+    rows:
+      - new:   {"keyword", "cur_count", "cur_ratio"}
+      - surge: {"keyword", "cur_count", "cur_ratio", "diff_pp"}
+    """
+    st.markdown(f'<div class="kw-card"><div class="kw-card-header">{title}</div>', unsafe_allow_html=True)
+
+    if not rows:
+        st.markdown(
+            '<div style="padding:12px 14px; color:#64748b; font-size:13px;">표시할 항목이 없습니다.</div></div>',
+            unsafe_allow_html=True,
+        )
+        return
+
+    df = pd.DataFrame(rows).head(top_k).copy()
+
+    # 공통: 현재 비중(%)
+    df["cur_ratio_pct"] = (df["cur_ratio"] * 100).round(1)
+    df["cur_count"] = df["cur_count"].astype(int)
+
+    # surge만: 증가폭(%p)
+    if mode == "surge":
+        df["diff_pp_pct"] = (df["diff_pp"] * 100).round(1)
+
+    for _, r in df.iterrows():
+        keyword = r["keyword"]
+        right_text = f"{r['cur_count']}건 | {r['cur_ratio_pct']}%"
+
+        if mode == "new":
+            pill_cls = "kw-pill-new"
+            pill_text = "NEW"
+        else:
+            pill_cls = "kw-pill-surge"
+            pill_text = f"+{r['diff_pp_pct']}%p"
+
+        st.markdown(
+            f"""
+            <div class="kw-row">
+              <div class="kw-left" title="{keyword}">{keyword}</div>
+              <div class="kw-right">
+                <span>{right_text}</span>
+                <span class="kw-pill {pill_cls}">{pill_text}</span>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+

@@ -924,3 +924,28 @@ def render(cfg_base: dict, today):
     with c5:
         delta_p = round(ratio_cur_positive - ratio_prev_positive, 1)
         class_mini_card("없음", len(df_cur_positive), ratio_cur_positive, delta_p, (delta_p > 0))
+
+    st.markdown("---")
+    # 2행 (left: 키워드 TopN, right: 키워드 추이)
+    left, right = st.columns([1, 1.4], gap="small")
+
+    with left:
+        if cfg["topn_class"] == '확정':
+            topn, selected_kw = render_top_keywords_bar_plotly(
+                df=df_cur_confirmed,
+                title="'확정' 키워드 TopN",
+                top_n=cfg["topn_n"],
+            )
+        elif cfg["topn_class"] == '불만':
+            topn, selected_kw = render_top_keywords_bar_plotly(
+                df=df_cur_complaint,
+                title="'불만' 키워드 TopN",
+                top_n=cfg["topn_n"],
+            )
+
+        else: # 확정+불만
+            topn, selected_kw = render_top_keywords_bar_plotly(
+                df=pd.concat([df_cur_confirmed, df_cur_complaint], ignore_index=True),
+                title="'확정+불만'키워드 TopN",
+                top_n=cfg["topn_n"],
+            )

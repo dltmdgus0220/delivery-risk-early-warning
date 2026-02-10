@@ -43,6 +43,38 @@ def parse_keywords(x):
     # fallback: 콤마 분리
     return [k.strip() for k in s.split(",") if k.strip()]
 
+# 특정 월 데이터 조회
+def fetch_month_df(db_path: str, table: str, yyyymm: str) -> pd.DataFrame:
+    year, month = map(int, yyyymm.split("-"))
+
+    start_date = date(year, month, 1)
+    end_date = start_date + relativedelta(months=1)
+
+    conn = sqlite3.connect(db_path)
+
+    if table == 'data':
+        query = f"""
+            SELECT *
+            FROM {table}
+            WHERE at >= ? AND at < ?
+        """
+        params = (start_date.isoformat(), end_date.isoformat())
+    elif table == "summary":
+        query = f"""
+            SELECT *
+            FROM {table}
+            WHERE month = ?
+        """
+        params = (yyyymm,)
+
+    df = pd.read_sql(
+        query,
+        conn,
+        params=params
+    )
+
+    conn.close()
+    return df
 # 키워드 카운팅
 def keyword_count(df:pd.DataFrame) -> Counter:
     all_reviews = [k for ks in df[KEYWORD_COL] for k in ks]

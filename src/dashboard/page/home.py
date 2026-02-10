@@ -319,8 +319,42 @@ def render(cfg: dict, today: datetime):
     df_complaint = df_data[df_data['churn_intent_label'] == 1].copy()
     df_positive = df_data[df_data['churn_intent_label'] == 0].copy()
 
+    # 대시보드 렌더링
+    st.markdown("## 🛵 배달 리스크 대시보드")
+    st.markdown("### Overview")
+    st.caption(f"분석 기간: {start_dt:%Y-%m-%d} ~ {end_dt:%Y-%m-%d}")
+
+    st.divider()
 
 
+    # 1행 (집계요약, 추이 시각화)
+    left, right = st.columns([1, 1.8], gap="medium")
+
+    # 집계 요약
+    with left:
+        st.markdown("#### 📌 수집 현황")
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            kpi_card("리뷰수", f"{len(df_data):,}건", icon="🗂️", sub=f"최근 적재 날짜: {date.today():%Y-%m-%d}")
+        with c2:
+            kpi_card("이탈지수", f"{risk_score:.2f}", icon="⚠️", sub="0에 가까울수록 안정")
+        
+        st.divider()
+
+        st.markdown("##### 클래스별 분포")
+        r1, r2, r3 = st.columns(3)
+
+        with r1:
+            ratio_confirmed = round((len(df_confirmed) / len(df_data)) * 100, 2)
+            class_card("'확정'", len(df_confirmed), ratio_confirmed, bar_color="#EF4444")
+        with r2:
+            ratio_complaint = round((len(df_complaint) / len(df_data)) * 100, 2)
+            class_card("'불만'", len(df_complaint), ratio_complaint, bar_color="#F59E0B")
+        with r3:
+            ratio_positive = round((len(df_positive) / len(df_data)) * 100, 2)
+            class_card("'없음'", len(df_positive), ratio_positive, bar_color="#10B981")
 
     # 클래스별 키워드 TopN
     st.divider()

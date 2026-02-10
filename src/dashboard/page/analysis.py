@@ -167,3 +167,11 @@ def inject_keyword_list_css():
         unsafe_allow_html=True,
     )
 
+# DB내 최소, 최대 기간 조회
+def get_min_max_yyyymm(db_path: str):
+    import sqlite3, pandas as pd
+    conn = sqlite3.connect(db_path)
+    df = pd.read_sql("SELECT MIN(at) AS min_at, MAX(at) AS max_at FROM data", conn)
+    conn.close()
+    return df.loc[0, "min_at"][:7], df.loc[0, "max_at"][:7]
+

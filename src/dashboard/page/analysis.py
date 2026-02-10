@@ -769,3 +769,30 @@ def render_sidebar(today: datetime):
         "topn_class": topn_class,
         "topn_n": topn_n,
     }
+
+# 동시발생 키워드 사이드바 렌더링
+def render_cooccur_sidebar(df_cur: pd.DataFrame):
+    with st.sidebar:
+        st.markdown("### 🤝 동시발생 키워드 설정")
+
+        co_cls = st.radio(
+            "대상 클래스",
+            ["확정", "불만", "확정+불만"],
+            horizontal=True,
+            key="co_cls",
+        )
+
+        df_cls = filter_df_by_class(df_cur, co_cls)
+        suggest_list, _ = top_keywords_for_suggest(df_cls, top_k=20)
+
+        co_target_kw = st.selectbox(
+            "기준 키워드 (Top20 추천)",
+            options=suggest_list,
+            index=0,
+            key="co_target_kw",
+        )
+
+    return {
+        "co_cls": co_cls,
+        "co_target_kw": co_target_kw,
+    }

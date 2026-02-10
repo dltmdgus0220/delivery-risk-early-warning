@@ -713,3 +713,59 @@ def render_summary_section(title: str, obj):
                 for t in texts:
                     st.write(f"- {t}")
 
+
+# --- 2. 사이드바 ---
+
+# 기본 사이드바 렌더링
+def render_sidebar(today: datetime):
+    with st.sidebar:    
+        st.markdown("### 📅 월 선택")
+
+        # 기준: 지난달
+        y, m = today.year, today.month - 1
+        if m == 0:
+            y -= 1
+            m = 12
+
+        # 최근 24개월 생성 (기준달부터)
+        months = []
+
+        for _ in range(24):
+            months.append(f"{y:04d}-{m:02d}")
+            m -= 1
+            if m == 0:
+                y -= 1
+                m = 12
+
+        selected_month = st.selectbox(
+            "분석 기준 월",
+            options=months,
+            index=0, # 항상 지난달이 첫 번째
+        )
+
+        st.markdown("---")
+        st.markdown("### 🔑 키워드 TopN 설정")
+
+        topn_class = st.radio(
+            "대상 클래스",
+            options=["확정", "불만", "확정+불만"],
+            horizontal=True,
+            key="topn_target",
+        )
+
+        topn_n = st.slider(
+            "TopN (N)",
+            min_value=3,
+            max_value=10,
+            value=5,
+            step=1,
+            key="topn_n",
+        )
+
+    return {
+        "yyyymm": selected_month,
+        "year": int(selected_month.split("-")[0]),
+        "month": int(selected_month.split("-")[1]),
+        "topn_class": topn_class,
+        "topn_n": topn_n,
+    }

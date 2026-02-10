@@ -326,7 +326,6 @@ def render(cfg: dict, today: datetime):
 
     st.divider()
 
-
     # 1행 (집계요약, 추이 시각화)
     left, right = st.columns([1, 1.8], gap="medium")
 
@@ -391,6 +390,17 @@ def render(cfg: dict, today: datetime):
 
     top_n = st.slider("Top N", 5, 30, 10, 1)
 
+    # 카운터
+    counter_confirmed = keyword_count(df_confirmed)
+    counter_complaint = keyword_count(df_complaint)
+    counter_positive = keyword_count(df_positive)
+
+    # topn 키워드
+    topn_list = {
+        "확정": top_n_keywords_extract(counter_confirmed, n=top_n),
+        "불만": top_n_keywords_extract(counter_complaint, n=top_n),
+        "없음": top_n_keywords_extract(counter_positive, n=top_n),
+    }
 
     buckets = ["확정", "불만", "없음"]
     cols = st.columns(3, gap="large")
@@ -399,10 +409,30 @@ def render(cfg: dict, today: datetime):
         with cols[i]:
             st.markdown(f"#### '{label}' 키워드 Top{top_n}")
 
+            topn = topn_list[label]
+
+            if not topn:
                 st.caption("데이터가 없습니다.")
             else:
+                df_kw = pd.DataFrame(topn, columns=["keyword", "cnt"])
+
                 bar = (
+                    alt.Chart(df_kw)
                     .mark_bar()
                     .encode(
+                        y=alt.Y(
+                            "keyword:N",
+                            sort="-x",
+                            axis=alt.Axis(title=None)
+                        ),
+                        x=alt.X(
+                            "cnt:Q",
+                            axis=alt.Axis(title="빈도")
+                        ),
+                        tooltip=[
+                            alt.Tooltip("keyword:N", title="키워드"),
+                            alt.Tooltip("cnt:Q", title="빈도"),
+                        ],
                     )
                 )
+                st.altair_chart(bar, use_container_width=True)

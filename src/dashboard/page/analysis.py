@@ -470,3 +470,9 @@ def render_keyword_list_card(
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+# 키워드 검색 헬퍼
+def top_keywords_for_suggest(df_cls: pd.DataFrame, top_k: int = 20):
+    c = keyword_count(df_cls)
+    top = top_n_keywords_extract(c, n=top_k)
+    return [k for k, _ in top], c
+

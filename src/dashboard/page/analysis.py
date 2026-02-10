@@ -329,3 +329,42 @@ def build_11mo_window(center_yyyymm: str, min_yyyymm: str | None = None, max_yyy
         cur = cur + relativedelta(months=1)
 
     return months
+
+# 월별 키워드 비율 계산
+def monthly_keyword_ratio(
+    db_path: str,
+    months: list[str],
+    keyword: str,
+    cls: str,
+):
+    """
+    months: ["2025-08", ..., "2026-06"] 같은 11개월
+    cls: "확정"|"불만"|"확정+불만"
+    """
+    rows = []
+
+    for yyyymm in months:
+        df_m = fetch_month_df(db_path, "data", yyyymm)
+        if len(df_m) == 0:
+            rows.append({"yyyymm": yyyymm, "ratio": 0.0, "count": 0, "total": 0})
+            continue
+
+        df_m["keywords"] = df_m["keywords"].apply(parse_keywords)
+
+        # 클래스 필터
+        if cls == "확정":
+            df_m = df_m[df_m["churn_intent_label"] == 2]
+        elif cls == "불만":
+            df_m = df_m[df_m["churn_intent_label"] == 1]
+        else:  # 확정+불만
+            df_m = df_m[df_m["churn_intent_label"].isin([1, 2])]
+
+        counter = keyword_count(df_m)
+        total = sum(counter.values())
+        count = counter.get(keyword, 0)
+        ratio = 0.0 if total == 0 else round(count / total * 100, 2)
+
+        rows.append({"yyyymm": yyyymm, "ratio": ratio, "count": count, "total": total})
+
+    return pd.DataFrame(rows)
+

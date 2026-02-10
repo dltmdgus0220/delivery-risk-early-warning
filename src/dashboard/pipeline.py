@@ -1,3 +1,4 @@
+# 솔루션 반영해서 넣어야함.
 import json
 import pandas as pd
 import sqlite3
@@ -107,12 +108,13 @@ async def run_pipeline(conn, today, data_table:str="data", summary_table:str="su
     risk_score = risk_score_calc(df_cur)
     print("이탈 지수 계산 완료")
     # '확정' 키워드 기반 리뷰 요약
-    summary_complaint, summary_confirmed = summary_pipeline(df_cur)
+    summary_complaint, summary_confirmed, target = summary_pipeline(df_cur)
     print("요약 카드 생성 완료")
 
     df_summary = pd.DataFrame([{
         "month": start_date.strftime('%Y-%m'),
         "risk_score": risk_score,
+        "target": target,
         "summary_complaint": summary_complaint,
         "summary_confirmed": summary_confirmed,
         "solution": "대안없음"

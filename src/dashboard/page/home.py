@@ -356,6 +356,35 @@ def render(cfg: dict, today: datetime):
             ratio_positive = round((len(df_positive) / len(df_data)) * 100, 2)
             class_card("'없음'", len(df_positive), ratio_positive, bar_color="#10B981")
 
+    # 추이 시각화
+    with right:
+        st.markdown("#### 📈 월별 추이")
+
+        rows = []
+        for m, g in df_data.groupby("month", sort=True):
+            rows.append({
+                "month": m,
+                "count": int(len(g)),
+                "risk_score": float(risk_score_calc(g)) if len(g) else 0.0,
+            })
+
+        df_m = pd.DataFrame(rows).sort_values("month").reset_index(drop=True)
+
+        if df_m.empty:
+            st.info("선택 기간에 표시할 데이터가 없어요.")
+        else:
+            metric = st.selectbox("지표 선택", ["리뷰수", "이탈지수"], index=0,)
+
+            # 간단 요약(최근월 기준)
+            latest = df_m.iloc[-1]
+            if metric == "이탈지수":
+                st.caption(f"최근월({latest['month']}) 이탈지수: {latest['risk_score']:.2f}")
+                chart = plot_monthly_line(df_m, "count", "리뷰수(건)")
+            else:
+                st.caption(f"최근월({latest['month']}) 리뷰수: {int(latest['count']):,}건")
+                chart = plot_monthly_line(df_m, "risk_score", "이탈지수")
+            st.altair_chart(chart, use_container_width=True)
+    
     # 클래스별 키워드 TopN
     st.divider()
     st.subheader("클래스별 키워드 TopN")

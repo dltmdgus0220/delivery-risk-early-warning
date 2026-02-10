@@ -183,3 +183,20 @@ def filter_df_by_class(df: pd.DataFrame, cls: str) -> pd.DataFrame:
         return df[df["churn_intent_label"] == 1].copy()
     return df[df["churn_intent_label"].isin([1, 2])].copy()
 
+# ---- 1행 ----
+# 데이터수/이탈지수 카드
+def kpi_card(label: str, value: str, delta_text: str, delta_is_good: bool):
+    # delta_is_good=True면 초록(긍정), False면 빨강(부정)
+    cls = "pos" if delta_is_good else "neg"
+
+    st.markdown(
+        f"""
+        <div class="kpi">
+          <div class="label">{label}</div>
+          <div class="value">{value}</div>
+          <div class="pill {cls}">{delta_text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+

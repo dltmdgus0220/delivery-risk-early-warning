@@ -129,6 +129,18 @@ def inject_card_css():
     </style>
     """, unsafe_allow_html=True)
 
+# 리뷰수/이탈지수 카드
+def kpi_card(label: str, value: str, icon: str = "📌", sub: str | None = None):
+    st.markdown(
+        f"""
+        <div class="card">
+          <div class="kpi-label">{icon}<span>{label}</span></div>
+          <div class="kpi-value">{value}</div>
+          {"<div class='kpi-sub'>" + sub + "</div>" if sub else ""}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
         f"""
         """,

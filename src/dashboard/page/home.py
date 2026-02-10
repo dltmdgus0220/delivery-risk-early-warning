@@ -11,6 +11,26 @@ from src.risk_summary.risk_score_calc import risk_score_calc
 
 # --- 1. 유틸 ---
 
+DATE_COL = "at"
+DATA_TABLE = "data"
+SUMMARY_TABLE = "summary"
+
+# 데이터 포멧
+def _to_date(x):
+    if isinstance(x, date):
+        return x
+    return date.fromisoformat(str(x)[:10])
+
+def _fmt_yy_mm_dd(s: str) -> str:
+    dt = datetime.strptime(s, "%Y-%m-%d")
+    return dt.strftime("%y.%m.%d")
+
+def _fmt_k(n: int) -> str:
+    if n >= 1000:
+        return f"{n/1000:.1f}k"
+    return f"{n}"
+
+# 1달전/2달전 날짜 리턴
 def _month_range(today:datetime, offset_months: int = 0):
     """offset_months=0 1달전, -1 2달전 (today 기준)"""
     first_month = today.replace(day=1) - timedelta(days=1)
@@ -29,11 +49,12 @@ def _month_range(today:datetime, offset_months: int = 0):
     end = next_month - timedelta(days=1)
     return start, end
 
+# DB내 저장된 기간 및 데이터수 조회
 def _minmax_and_total(conn):
     cur = conn.execute(
         f"""
         SELECT MIN(date({DATE_COL})), MAX(date({DATE_COL})), COUNT(*)
-        FROM {TABLE}
+        FROM data
         """
     )
     mn, mx, total = cur.fetchone()

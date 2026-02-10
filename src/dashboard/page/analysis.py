@@ -526,3 +526,31 @@ def card_container(title: str, subtitle: str | None = None):
         """,
         unsafe_allow_html=True,
     )
+
+def render_cooccur_card(target_kw, cls, co_list, base_n):
+    subtitle = f"{cls} · '{target_kw}' · 포함 리뷰 {base_n:,}건 기준"
+    card_container("🤝 동시발생 키워드", subtitle)
+
+    if not co_list:
+        st.markdown(
+            "<div style='padding:12px;color:#64748b;'>동시발생 키워드가 없습니다.</div></div>",
+            unsafe_allow_html=True,
+        )
+        return
+
+    for r in co_list:
+        st.markdown(
+            f"""
+            <div class="kw-row">
+              <div class="kw-left" title="{target_kw} + {r['keyword']}">
+                {target_kw} + {r['keyword']}
+              </div>
+              <div class="kw-right">
+                {int(r['count'])}건 | {r['ratio']:.1f}%
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)

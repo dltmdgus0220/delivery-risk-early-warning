@@ -880,3 +880,47 @@ def render(cfg_base: dict, today):
     ratio_prev_complaint = round(len(df_prev_complaint)/len(df_prev)*100, 1)
     ratio_prev_positive = round(len(df_prev_positive)/len(df_prev)*100, 1)
 
+    st.caption(
+        f"※ 모든 증감 수치는 지난달({prev_dt.year % 100:02d}년 {prev_dt.month:02d}월) 대비 기준입니다."
+    )
+
+    year, month = cfg["year"], cfg["month"]
+
+    st.markdown("## 🔑 키워드 중심 분석")
+    st.markdown(f"### {year % 100:02d}년 {month:02d}월 데이터 분석")
+
+    st.divider()
+
+    # 1행 (데이터수/이탈지수/클래스별분포)
+    st.markdown("#### 📌 수집 현황")
+
+    delta_cnt = len(df_cur) - len(df_prev)
+    c1, c2, c3, c4, c5 = st.columns(5)
+
+    with c1:
+        kpi_card(
+            label="리뷰 수",
+            value=f"{len(df_cur):,}건",
+            delta_text=f"{delta_cnt:+,}건",
+            delta_is_good=(delta_cnt >= 0),
+        )
+
+    with c2:
+        churn_value = df_cur_summary.iloc[0]['risk_score']
+        churn_delta = churn_value - df_prev_summary.iloc[0]['risk_score']
+        kpi_card(
+            label="이탈지수",
+            value=f"{churn_value:.2f}",
+            delta_text=f"{churn_delta:+.2f}",
+            delta_is_good=(churn_delta < 0),
+        )
+
+    with c3:
+        delta_p = round(ratio_cur_confirmed - ratio_prev_confirmed, 1)
+        class_mini_card("'확정'", len(df_cur_confirmed), ratio_cur_confirmed, delta_p, (delta_p < 0))
+    with c4:
+        delta_p = round(ratio_cur_complaint - ratio_prev_complaint, 1)
+        class_mini_card("불만", len(df_cur_complaint), ratio_cur_complaint, delta_p, (delta_p < 0))
+    with c5:
+        delta_p = round(ratio_cur_positive - ratio_prev_positive, 1)
+        class_mini_card("없음", len(df_cur_positive), ratio_cur_positive, delta_p, (delta_p > 0))

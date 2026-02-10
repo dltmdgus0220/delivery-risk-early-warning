@@ -514,3 +514,15 @@ def cooccur_top(
 
     return out, base
 
+# 동시발생 키워드 렌더링
+def card_container(title: str, subtitle: str | None = None):
+    st.markdown(
+        f"""
+        <div class="kw-card">
+          <div class="kw-card-header">
+            {title}
+            {f"<div style='font-size:12px;color:#64748b;margin-top:4px;'>{subtitle}</div>" if subtitle else ""}
+          </div>
+        """,
+        unsafe_allow_html=True,
+    )

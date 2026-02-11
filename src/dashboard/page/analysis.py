@@ -972,3 +972,39 @@ def render(cfg_base: dict, today):
             )
 
     st.markdown("---")
+    # 3행 (left: top - 신규 키워드, bottom - 급증 키워드, mid: 동시발생 키워드, right: 드릴다운)
+    # ✅ 신규/급증 계산 (3행 직전이나 3행 안에서 한번만)
+    df_cur_cls = filter_df_by_class(df_cur, cfg["topn_class"])
+    df_prev_cls = filter_df_by_class(df_prev, cfg["topn_class"])
+
+    counter_cur = keyword_count(df_cur_cls)
+    counter_prev = keyword_count(df_prev_cls)
+
+    new_list, surged_list = detect_keyword_changes(
+        counter_prev=counter_prev,
+        counter_cur=counter_cur,
+        threshold=0.03,     # 예: 3%p 이상 증가를 급증으로 (너 데이터에 맞게 조절)
+        min_cur_count=5,
+    )
+
+    left, mid, right = st.columns([1, 1, 2], gap="small")
+
+    with left:
+        render_keyword_list_card("🆕 신규 키워드", new_list, top_k=5, mode="new")
+        st.markdown("") # 간격
+        render_keyword_list_card("📈 급증 키워드", surged_list, top_k=5, mode="surge")
+
+    with mid:
+        render_cooccur_panel(
+            df_cur=df_cur,
+            co_cls=cfg["co_cls"],
+            co_target_kw=cfg["co_target_kw"],
+        )
+    with right:
+        render_drilldown_panel(
+            df_cur=df_cur,
+            dd_cls=cfg["dd_cls"],
+            dd_target_kw=cfg["dd_target_kw"],
+            limit=cfg["dd_limit"],
+        )
+

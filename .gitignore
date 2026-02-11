@@ -213,3 +213,5 @@ __marimo__/
 *old.py
 model_out*
 *.db
+data_db_init.py
+summary_db_init.py

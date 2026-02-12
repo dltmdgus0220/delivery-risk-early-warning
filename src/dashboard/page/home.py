@@ -335,7 +335,7 @@ def render(cfg: dict, today: datetime):
     df_positive = df_data[df_data['churn_intent_label'] == 0].copy()
 
     # 대시보드 렌더링
-    st.markdown("## 🛵 배달 리스크 대시보드")
+    st.markdown("## 🛵 '배달의민족' 이탈 리스크 분석 대시보드")
     st.markdown("### Overview")
     st.caption(f"분석 기간: {start_dt:%Y-%m-%d} ~ {end_dt:%Y-%m-%d}")
 
